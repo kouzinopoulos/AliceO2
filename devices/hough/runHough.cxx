@@ -744,5 +744,6 @@ int main(int argc, char** argv)
     // Draw the accumulator data as curves
     drawAccumulatorCurves(totalNumberOfClusters);
   */
+
   return 0;
 }
