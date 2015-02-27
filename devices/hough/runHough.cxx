@@ -22,7 +22,8 @@
 #include <sstream>
 
 std::unique_ptr<AliHLTTPCSpacePointContainer> spacepoints;
-vector<float> clusterCoordinates;
+vector<float> clusterCartesianCoordinates;
+vector<float> clusterConformalMappingCoordinates;
 vector<unsigned int> accumulator;
 vector<int> trackCoordinates;
 
@@ -87,19 +88,39 @@ int getNumberOfTracks()
   return trackCoordinates.size() / 4;
 }
 
-float getClusterX(int clusterNumber)
+float getClusterID(int clusterNumber)
 {
-  return clusterCoordinates[clusterNumber * clusterParameters + 1];
+  return clusterCartesianCoordinates[clusterNumber * clusterParameters + 0];
 }
 
-float getClusterY(int clusterNumber)
+float getClusterCartesianX(int clusterNumber)
 {
-  return clusterCoordinates[clusterNumber * clusterParameters + 2];
+  return clusterCartesianCoordinates[clusterNumber * clusterParameters + 1];
 }
 
-float getClusterZ(int clusterNumber)
+float getClusterCartesianY(int clusterNumber)
 {
-  return clusterCoordinates[clusterNumber * clusterParameters + 3];
+  return clusterCartesianCoordinates[clusterNumber * clusterParameters + 2];
+}
+
+float getClusterCartesianZ(int clusterNumber)
+{
+  return clusterCartesianCoordinates[clusterNumber * clusterParameters + 3];
+}
+
+float getClusterConformalMappingX(int clusterNumber)
+{
+  return clusterConformalMappingCoordinates[clusterNumber * clusterParameters + 1];
+}
+
+float getClusterConformalMappingY(int clusterNumber)
+{
+  return clusterConformalMappingCoordinates[clusterNumber * clusterParameters + 2];
+}
+
+float getClusterConformalMappingZ(int clusterNumber)
+{
+  return clusterConformalMappingCoordinates[clusterNumber * clusterParameters + 3];
 }
 
 void drawTracks()
@@ -132,8 +153,8 @@ void drawAccumulatorCurves(int totalNumberOfClusters)
   TGraph* g[totalNumberOfClusters];
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    float x = getClusterX(i);
-    float y = getClusterY(i);
+    float x = getClusterCartesianX(i);
+    float y = getClusterCartesianY(i);
 
     g[i] = new TGraph();
 
@@ -171,29 +192,45 @@ void drawAccumulatorHistogram(int totalNumberOfClusters)
   c5->Print("accumulatorHistogram.pdf");
 }
 
-void drawClusters1D(int totalNumberOfClusters)
+void drawCartesianClusters1D(int totalNumberOfClusters)
 {
-  TCanvas* c3 = new TCanvas("c1", "Clusters", 0, 0, 800, 600);
+  TCanvas* c3 = new TCanvas("c1", "Cartesian clusters", 0, 0, 800, 600);
   TGraph* gr3 = new TGraph();
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    gr3->SetPoint(i, getClusterX(i), getClusterY(i));
+    gr3->SetPoint(i, getClusterCartesianX(i), getClusterCartesianY(i));
   }
 
   // Draw with colored dots
   gr3->SetMarkerStyle(1);
   gr3->Draw("A*");
 
-  c3->Print("clusters.pdf");
+  c3->Print("cartesian_clusters.pdf");
 }
 
-void drawClusters(int totalNumberOfClusters, std::string dataFilename)
+void drawConformalMappingClusters1D(int totalNumberOfClusters)
 {
-  TCanvas* c1 = new TCanvas("c1", dataFilename.c_str(), 0, 0, 800, 600);
+  TCanvas* c7 = new TCanvas("c1", "Conformal mapping clusters", 0, 0, 800, 600);
+  TGraph* gr7 = new TGraph();
+
+  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
+    gr7->SetPoint(i, getClusterConformalMappingX(i), getClusterConformalMappingY(i));
+  }
+
+  // Draw with colored dots
+  gr7->SetMarkerStyle(1);
+  gr7->Draw("A*");
+
+  c7->Print("conformal_mapping_clusters.pdf");
+}
+
+void drawClusters(int totalNumberOfClusters)
+{
+  TCanvas* c1 = new TCanvas("c1", "Cartesian clusters", 0, 0, 800, 600);
   TGraph2D* dt = new TGraph2D(10000);
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    dt->SetPoint(i, clusterCoordinates[i * 4 + 1], clusterCoordinates[i * 4 + 2], clusterCoordinates[i * 4 + 3]);
+    dt->SetPoint(i, getClusterCartesianX(i), getClusterCartesianY(i), getClusterCartesianZ(i));
   }
 
   // Draw with colored dots
@@ -237,10 +274,10 @@ void calculateTracks(int totalNumberOfClusters)
   for (Int_t r = 0; r < 2 * rMax * rResolution; r++) {
     for (Int_t theta = 0; theta < thetaMax; theta++) {
       if (getAccumulatorBin(r, theta) >= houghThreshold) {
-         if (localAccumulatorMaxima(r, theta) > getAccumulatorBin(r, theta)) {
+        if (localAccumulatorMaxima(r, theta) > getAccumulatorBin(r, theta)) {
           continue;
         }
-        //cout << "Found a track at [" << ((double)r / rResolution) - rMax << "][" << theta << "]" << endl;
+        // cout << "Found a track at [" << ((double)r / rResolution) - rMax << "][" << theta << "]" << endl;
         if (theta >= 45 && theta <= 135) {
           startX = 0;
           startY = (((double)r / rResolution) - rMax - startX * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
@@ -252,7 +289,7 @@ void calculateTracks(int totalNumberOfClusters)
           endY = yMax;
           endX = (((double)r / rResolution) - rMax - endY * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
         }
-        //cout << "Track coordinates: " << startX << "," << startY << " - " << endX << "," << endY << endl;
+        // cout << "Track coordinates: " << startX << "," << startY << " - " << endX << "," << endY << endl;
         setTracks(startX, startY, endX, endY);
       }
     }
@@ -262,14 +299,19 @@ void calculateTracks(int totalNumberOfClusters)
 void conformalMapping(int totalNumberOfClusters)
 {
   for (int i = 0; i < totalNumberOfClusters; i++) {
-    float x = getClusterX(i);
-    float y = getClusterY(i);
+    float x = getClusterCartesianX(i);
+    float y = getClusterCartesianY(i);
 
     // Equation (2) from paper [1]
     float alpha = x / (x * x + y * y);
     float beta = y / (x * x + y * y);
 
-    cout << "A: " << alpha << " B: " << beta << endl;
+    //cout << "A: " << alpha << " B: " << beta << endl;
+
+    clusterConformalMappingCoordinates.push_back((float)getClusterID(i));
+    clusterConformalMappingCoordinates.push_back(alpha);
+    clusterConformalMappingCoordinates.push_back(beta);
+    clusterConformalMappingCoordinates.push_back(0.0);
   }
 }
 
@@ -289,8 +331,8 @@ void transform(int totalNumberOfClusters)
   accumulator.resize(2 * rMax * thetaMax * rResolution, 0);
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    float x = getClusterX(i);
-    float y = getClusterY(i);
+    float x = getClusterCartesianX(i);
+    float y = getClusterCartesianY(i);
 
     for (Int_t theta = 0; theta < thetaMax; theta++) {
       double r = (x * cos(theta * DEG2RAD)) + (y * sin(theta * DEG2RAD));
@@ -304,7 +346,8 @@ void transform(int totalNumberOfClusters)
   }
 }
 
-/// Determine the maximum ceiling to X,Y,Z coordinates from the clusterCoordinates vector to later allocate the hough
+/// Determine the maximum ceiling to X,Y,Z coordinates from the clusterCartesianCoordinates vector to later allocate the
+/// hough
 /// transform accumulator
 void determineMaxDimensions(int totalNumberOfClusters)
 {
@@ -313,18 +356,17 @@ void determineMaxDimensions(int totalNumberOfClusters)
   zMax = 0;
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    if (abs(clusterCoordinates[i * 4 + 1]) > xMax) {
-      xMax = ceil(abs(clusterCoordinates[i * 4 + 1]));
+    if (abs(getClusterCartesianX(i)) > xMax) {
+      xMax = ceil(abs(getClusterCartesianX(i)));
     }
-    if (abs(clusterCoordinates[i * 4 + 2]) > yMax) {
-      yMax = ceil(abs(clusterCoordinates[i * 4 + 2]));
+    if (abs(getClusterCartesianY(i)) > yMax) {
+      yMax = ceil(abs(getClusterCartesianY(i)));
     }
-    if (abs(clusterCoordinates[i * 4 + 3]) > zMax) {
-      zMax = ceil(abs(clusterCoordinates[i * 4 + 3]));
+    if (abs(getClusterCartesianZ(i)) > zMax) {
+      zMax = ceil(abs(getClusterCartesianZ(i)));
     }
   }
-
-  //cout << "xMax: " << xMax << " yMax: " << yMax << " zMax: " << zMax << endl;
+  cout << "xMax: " << xMax << " yMax: " << yMax << " zMax: " << zMax << endl;
 }
 
 void printData(int totalNumberOfClusters)
@@ -333,17 +375,17 @@ void printData(int totalNumberOfClusters)
        << endl;
 
   for (int i = 0; i < totalNumberOfClusters; i++) {
-    cout << (AliHLTUInt32_t)clusterCoordinates[i * 4] << setw(13) << clusterCoordinates[i * 4 + 1] << setw(13)
-         << clusterCoordinates[i * 4 + 2] << setw(13) << clusterCoordinates[i * 4 + 3] << endl;
+    cout << (AliHLTUInt32_t)getClusterID(i) << setw(13) << getClusterCartesianX(i) << setw(13)
+         << getClusterCartesianY(i) << setw(13) << getClusterCartesianZ(i) << endl;
   }
 }
 
 void addDataToCoordinatesVector(AliHLTUInt32_t clusterID, float XCoordinate, float YCoordinate, float ZCoordinate)
 {
-  clusterCoordinates.push_back((float)clusterID);
-  clusterCoordinates.push_back(XCoordinate);
-  clusterCoordinates.push_back(YCoordinate);
-  clusterCoordinates.push_back(ZCoordinate);
+  clusterCartesianCoordinates.push_back((float)clusterID);
+  clusterCartesianCoordinates.push_back(XCoordinate);
+  clusterCartesianCoordinates.push_back(YCoordinate);
+  clusterCartesianCoordinates.push_back(ZCoordinate);
 }
 
 int processData(std::string dataPath, std::string dataType, std::string dataOrigin)
@@ -400,7 +442,7 @@ int processData(std::string dataPath, std::string dataType, std::string dataOrig
   std::vector<AliHLTUInt32_t> clusterIDs;
   spacepoints->GetClusterIDs(clusterIDs);
 
-  // Append the cluster IDs and their X, Y and Z coordinates to the clusterCoordinates vector
+  // Append the cluster IDs and their X, Y and Z coordinates to the clusterCartesianCoordinates vector
   for (vector<AliHLTUInt32_t>::const_iterator element = clusterIDs.begin(); element != clusterIDs.end(); element++) {
     AliHLTUInt32_t clusterID = *element;
 
@@ -455,38 +497,42 @@ int main(int argc, char** argv)
 
   cout << "Added " << totalNumberOfClusters << " clusters from " << totalNumberOfDataFiles << " data files" << endl;
 
-  // DEBUG
-  totalNumberOfClusters = 15;
-  for (int kk = 0; kk < 6; kk++) {
+  /*  // DEBUG
+    totalNumberOfClusters = 15;
+    for (int kk = 0; kk < 6; kk++) {
 
-    clusterCoordinates[kk * 4] = kk;
-    clusterCoordinates[kk * 4 + 1] = 9.0 + kk;
-    clusterCoordinates[kk * 4 + 2] = 17.0;
-    clusterCoordinates[kk * 4 + 3] = 0;
-  }
+      clusterCartesianCoordinates[kk * 4] = kk;
+      clusterCartesianCoordinates[kk * 4 + 1] = 9.0 + kk;
+      clusterCartesianCoordinates[kk * 4 + 2] = 17.0;
+      clusterCartesianCoordinates[kk * 4 + 3] = 0;
+    }
 
-  for (int kk = 6; kk < 11; kk++) {
+    for (int kk = 6; kk < 11; kk++) {
 
-    clusterCoordinates[kk * 4] = kk;
-    clusterCoordinates[kk * 4 + 1] = 9.0 + kk - 5;
-    clusterCoordinates[kk * 4 + 2] = 17.0 + kk - 5;
-    clusterCoordinates[kk * 4 + 3] = 0;
-  }
+      clusterCartesianCoordinates[kk * 4] = kk;
+      clusterCartesianCoordinates[kk * 4 + 1] = 9.0 + kk - 5;
+      clusterCartesianCoordinates[kk * 4 + 2] = 17.0 + kk - 5;
+      clusterCartesianCoordinates[kk * 4 + 3] = 0;
+    }
 
-  for (int kk = 11; kk < 15; kk++) {
-    clusterCoordinates[kk * 4] = kk;
-    clusterCoordinates[kk * 4 + 1] = 10.0;
-    clusterCoordinates[kk * 4 + 2] = 19.0 + kk - 11;
-    clusterCoordinates[kk * 4 + 3] = 0;
-  }
+    for (int kk = 11; kk < 15; kk++) {
+      clusterCartesianCoordinates[kk * 4] = kk;
+      clusterCartesianCoordinates[kk * 4 + 1] = 10.0;
+      clusterCartesianCoordinates[kk * 4 + 2] = 19.0 + kk - 11;
+      clusterCartesianCoordinates[kk * 4 + 3] = 0;
+    }*/
 
-  //printData(totalNumberOfClusters);
+  totalNumberOfClusters = 150;
+
+  // printData(totalNumberOfClusters);
 
   // drawClusters(totalNumberOfClusters, dataFilename);
-  drawClusters1D(totalNumberOfClusters);
+  drawCartesianClusters1D(totalNumberOfClusters);
 
   // Transform the cartesian coordinate system into the conformal mapping system
-  // conformalMapping(totalNumberOfClusters);
+  conformalMapping(totalNumberOfClusters);
+
+  drawConformalMappingClusters1D(totalNumberOfClusters);
 
   // Determine the maximum dimensions of the clusters for the accumulator
   determineMaxDimensions(totalNumberOfClusters);
