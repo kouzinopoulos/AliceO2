@@ -126,22 +126,26 @@ float getClusterConformalMappingZ(int clusterNumber)
 void drawTracks()
 {
   TCanvas* c2 = new TCanvas("c2", "Reconstructed tracks", 0, 0, 800, 600);
-  TGraph* gr = new TGraph();
-  Double_t x[2], y[2];
+  TGraph* gr[getNumberOfTracks()];
 
   cout << "Number of tracks: " << getNumberOfTracks() << endl;
 
   for (int i = 0; i < getNumberOfTracks(); i++) {
-    x[0] = getTrackStartX(i);
-    x[1] = getTrackEndX(i);
-    y[0] = getTrackStartY(i);
-    y[1] = getTrackEndY(i);
+
+    gr[i] = new TGraph();
+
+    gr[i]->SetPoint(i * 2 + 0, getTrackStartX(i), getTrackStartY(i));
+    gr[i]->SetPoint(i * 2 + 1, getTrackEndX(i), getTrackEndY(i));
 
     if (i == 0) {
-      gr->DrawGraph(2, x, y, "AC");
+      gr[i]->Draw("AC");
     } else {
-      gr->DrawGraph(2, x, y, "CP");
+      gr[i]->Draw("CP");
     }
+
+    gr[i]->GetXaxis()->SetLimits(130, 161);
+    gr[i]->SetMinimum(0);
+    gr[i]->SetMaximum(30);
   }
   c2->Print("tracks.pdf");
 }
@@ -160,7 +164,7 @@ void drawAccumulatorCurves(int totalNumberOfClusters)
 
     for (Int_t theta = 0; theta < thetaMax; theta++) {
       double r = (x * cos(theta * DEG2RAD)) + (y * sin(theta * DEG2RAD));
-      g[i]->SetPoint(i * totalNumberOfClusters + theta, theta, r);
+      g[i]->SetPoint(i * thetaMax + theta, theta, r);
     }
 
     g[i]->SetMarkerStyle(1);
@@ -277,7 +281,7 @@ void calculateTracks(int totalNumberOfClusters)
         if (localAccumulatorMaxima(r, theta) > getAccumulatorBin(r, theta)) {
           continue;
         }
-        // cout << "Found a track at [" << ((double)r / rResolution) - rMax << "][" << theta << "]" << endl;
+
         if (theta >= 45 && theta <= 135) {
           startX = 0;
           startY = (((double)r / rResolution) - rMax - startX * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
@@ -289,7 +293,9 @@ void calculateTracks(int totalNumberOfClusters)
           endY = yMax;
           endX = (((double)r / rResolution) - rMax - endY * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
         }
-        // cout << "Track coordinates: " << startX << "," << startY << " - " << endX << "," << endY << endl;
+        cout << "Found a track at [" << ((double)r / rResolution) - rMax << "][" << theta << "]" << endl
+             << "Track coordinates: " << startX << "," << startY << " - " << endX << "," << endY << endl;
+
         setTracks(startX, startY, endX, endY);
       }
     }
@@ -306,7 +312,7 @@ void conformalMapping(int totalNumberOfClusters)
     float alpha = x / (x * x + y * y);
     float beta = y / (x * x + y * y);
 
-    //cout << "A: " << alpha << " B: " << beta << endl;
+    // cout << "A: " << alpha << " B: " << beta << endl;
 
     clusterConformalMappingCoordinates.push_back((float)getClusterID(i));
     clusterConformalMappingCoordinates.push_back(alpha);
@@ -351,10 +357,6 @@ void transform(int totalNumberOfClusters)
 /// transform accumulator
 void determineMaxDimensions(int totalNumberOfClusters)
 {
-  xMax = 0;
-  yMax = 0;
-  zMax = 0;
-
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     if (abs(getClusterCartesianX(i)) > xMax) {
       xMax = ceil(abs(getClusterCartesianX(i)));
@@ -522,7 +524,7 @@ int main(int argc, char** argv)
       clusterCartesianCoordinates[kk * 4 + 3] = 0;
     }*/
 
-  totalNumberOfClusters = 150;
+  totalNumberOfClusters = 300;
 
   // printData(totalNumberOfClusters);
 
@@ -543,14 +545,14 @@ int main(int argc, char** argv)
   // Determine if any lines were found
   calculateTracks(totalNumberOfClusters);
 
+  // Draw the reconstructed tracks
+  drawTracks();
+
   // Draw the accumulator data as curves
   drawAccumulatorCurves(totalNumberOfClusters);
 
   // Draw the accumulator data as a histogram
-  drawAccumulatorHistogram(totalNumberOfClusters);
-
-  // Draw the reconstructed tracks
-  drawTracks();
+  // drawAccumulatorHistogram(totalNumberOfClusters);
 
   return 0;
 }
