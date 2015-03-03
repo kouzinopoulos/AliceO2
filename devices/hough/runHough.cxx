@@ -228,17 +228,17 @@ void drawConformalMappingClusters1D(int totalNumberOfClusters)
   c7->Print("conformal_mapping_clusters.pdf");
 }
 
-void drawClusters(int totalNumberOfClusters)
+void drawCartesianClusters(int totalNumberOfClusters)
 {
-  TCanvas* c1 = new TCanvas("c1", "Cartesian clusters", 0, 0, 800, 600);
-  TGraph2D* dt = new TGraph2D(10000);
+  TCanvas* c1 = new TCanvas("c1", "Cartesian clusters", 800, 600);
+  TGraph2D* dt = new TGraph2D(totalNumberOfClusters);
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     dt->SetPoint(i, getClusterCartesianX(i), getClusterCartesianY(i), getClusterCartesianZ(i));
   }
 
   // Draw with colored dots
-  dt->SetMarkerStyle(1);
+  dt->SetMarkerStyle(2);
   dt->Draw("pcol");
 
   c1->Print("clusters.pdf");
@@ -528,7 +528,7 @@ int main(int argc, char** argv)
 
   // printData(totalNumberOfClusters);
 
-  // drawClusters(totalNumberOfClusters, dataFilename);
+  drawCartesianClusters(totalNumberOfClusters);
   drawCartesianClusters1D(totalNumberOfClusters);
 
   // Transform the cartesian coordinate system into the conformal mapping system
