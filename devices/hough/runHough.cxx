@@ -123,6 +123,19 @@ float getClusterConformalMappingZ(int clusterNumber)
   return clusterConformalMappingCoordinates[clusterNumber * clusterParameters + 3];
 }
 
+// Calculate an approximate value for η. See [1]:p8 for more information. Values below taken from AliHLTConfMapPoint.cxx
+Double_t calculatePseudoRapidity(int clusterNumber)
+{
+
+  Double_t radial = sqrt(getClusterCartesianX(clusterNumber) * getClusterCartesianX(clusterNumber) +
+                         getClusterCartesianY(clusterNumber) * getClusterCartesianY(clusterNumber) +
+                         getClusterCartesianZ(clusterNumber) * getClusterCartesianZ(clusterNumber));
+  Double_t eta =
+    0.5 * log((radial + getClusterCartesianZ(clusterNumber)) / (radial - getClusterCartesianZ(clusterNumber)));
+
+  return eta;
+}
+
 void drawTracks()
 {
   TCanvas* c2 = new TCanvas("c2", "Reconstructed tracks", 0, 0, 800, 600);
@@ -312,7 +325,7 @@ void conformalMapping(int totalNumberOfClusters)
     float alpha = x / (x * x + y * y);
     float beta = y / (x * x + y * y);
 
-    // cout << "A: " << alpha << " B: " << beta << endl;
+    cout << "A: " << alpha << " B: " << beta << " η: " << calculatePseudoRapidity(i) << endl;
 
     clusterConformalMappingCoordinates.push_back((float)getClusterID(i));
     clusterConformalMappingCoordinates.push_back(alpha);
@@ -524,7 +537,7 @@ int main(int argc, char** argv)
       clusterCartesianCoordinates[kk * 4 + 3] = 0;
     }*/
 
-  totalNumberOfClusters = 300;
+  totalNumberOfClusters = 4000;
 
   // printData(totalNumberOfClusters);
 
@@ -533,7 +546,7 @@ int main(int argc, char** argv)
 
   // Transform the cartesian coordinate system into the conformal mapping system
   conformalMapping(totalNumberOfClusters);
-
+return 0;
   drawConformalMappingClusters1D(totalNumberOfClusters);
 
   // Determine the maximum dimensions of the clusters for the accumulator
