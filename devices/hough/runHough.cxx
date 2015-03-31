@@ -30,6 +30,8 @@ vector<int> trackCoordinates;
 int xMax = 0;
 int yMax = 0;
 int zMax = 0;
+int aMax = 0;
+int bMax = 0;
 
 float etaMin;
 float etaMax;
@@ -39,6 +41,7 @@ int rResolution;
 int thetaMax;
 
 int houghThreshold = 6;
+int pseudorapiditySteps = 100;
 
 // sin and cos expect values in radians instead of degrees
 #define DEG2RAD 0.017453293f
@@ -295,7 +298,48 @@ int localAccumulatorMaxima(int r, int theta)
   return max;
 }
 
-void calculateTracks(int totalNumberOfClusters)
+void calculateConformalMappingTracks(int totalNumberOfClusters)
+{
+  /*  // DEBUG
+    for (Int_t r = 0; r < 2 * rMax * rResolution; r++) {
+      cout << r << ": " << setw(3);
+
+      for (Int_t theta = 0; theta < thetaMax; theta++) {
+        cout << theta << ": " << getAccumulatorBin(r, theta) << " ";
+      }
+      cout << endl;
+    }
+  */
+  int startA, startB, endA, endB;
+
+  for (Int_t r = 0; r < 2 * rMax * rResolution; r++) {
+    for (Int_t theta = 0; theta < thetaMax; theta++) {
+      if (getAccumulatorBin(r, theta) >= houghThreshold) {
+        if (localAccumulatorMaxima(r, theta) > getAccumulatorBin(r, theta)) {
+          continue;
+        }
+
+        if (theta >= 45 && theta <= 135) {
+          startA = 0;
+          startB = (((double)r / rResolution) - rMax - startA * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
+          endA = aMax;
+          endB = (((double)r / rResolution) - rMax - endA * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
+        } else {
+          startB = 0;
+          startA = (((double)r / rResolution) - rMax - startB * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
+          endB = bMax;
+          endA = (((double)r / rResolution) - rMax - endB * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
+        }
+        cout << "Found a track at [" << ((double)r / rResolution) - rMax << "][" << theta << "]" << endl
+             << "Track coordinates: " << startA << "," << startB << " - " << endA << "," << endB << endl;
+
+        setTracks(startA, startB, endA, endB);
+      }
+    }
+  }
+}
+
+void calculateCartesianTracks(int totalNumberOfClusters)
 {
   /*  // DEBUG
     for (Int_t r = 0; r < 2 * rMax * rResolution; r++) {
@@ -356,7 +400,7 @@ void conformalMapping(int totalNumberOfClusters)
   }
 }
 
-void transform(int totalNumberOfClusters)
+void transformCartesian(int totalNumberOfClusters)
 {
   thetaMax = 180;
   // Trigonometrically, the maximum distance is designated by the square root of the summation of the squares of the x
@@ -377,6 +421,37 @@ void transform(int totalNumberOfClusters)
 
     for (Int_t theta = 0; theta < thetaMax; theta++) {
       double r = (x * cos(theta * DEG2RAD)) + (y * sin(theta * DEG2RAD));
+      //      cout << "x: " << x << " y: " << y << " theta: " << theta << " r: " << r
+      //           << " round r: " << round((r + rMax) * rResolution) << endl;
+
+      // Use a discreet value for r by rounding r. Then, rMax is added to r to change its range from -rMax <= r <= rMax
+      // to 0 <= r <= 2 * rMax
+      setAccumulatorBin(round((r + rMax) * rResolution), theta);
+    }
+  }
+}
+
+void transformConformalMapping(int totalNumberOfClusters)
+{
+  thetaMax = 180;
+  // Trigonometrically, the maximum distance is designated by the square root of the summation of the squares of the x
+  // and y dimensions
+  rMax = ceil(sqrt(aMax * aMax + bMax * bMax));
+
+  // By setting rResolution = 1, r = 18.6 and r = 19.2 for theta = 48 will both cause bin(19,48) to increase. With a
+  // resoution of rResolution = 10, they will cause bin(186,48) and bin(192,48) to increase respectively
+  rResolution = 100;
+
+  // The lines will have -rMax <= r <= rMax and 0 <= theta <= thetaMax. The total space needed is thus 2 * rMax *
+  // thetaMax
+  accumulator.resize(2 * rMax * thetaMax * rResolution, 0);
+
+  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
+    float a = getClusterConformalMappingAlpha(i);
+    float b = getClusterConformalMappingBeta(i);
+
+    for (Int_t theta = 0; theta < thetaMax; theta++) {
+      double r = (a * cos(theta * DEG2RAD)) + (b * sin(theta * DEG2RAD));
       //      cout << "x: " << x << " y: " << y << " theta: " << theta << " r: " << r
       //           << " round r: " << round((r + rMax) * rResolution) << endl;
 
@@ -410,9 +485,9 @@ void determineMinMaxPseudoRapidity(int totalNumberOfClusters)
   cout << "Minimum eta: " << etaMin << " Maximum eta: " << etaMax << endl;
 }
 
-/// Determine the maximum ceiling to X,Y,Z coordinates from the clusterCartesianCoordinates vector to later allocate the
+/// Determine the maximum ceiling to x,y,z coordinates from the clusterCartesianCoordinates vector to later allocate the
 /// hough transform accumulator
-void determineMaxDimensions(int totalNumberOfClusters)
+void determineMaxCartesianDimensions(int totalNumberOfClusters)
 {
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     if (abs(getClusterCartesianX(i)) > xMax) {
@@ -426,6 +501,20 @@ void determineMaxDimensions(int totalNumberOfClusters)
     }
   }
   cout << "xMax: " << xMax << " yMax: " << yMax << " zMax: " << zMax << endl;
+}
+
+/// Determine the maximum ceiling to a and b conformal mapping coordinates from the clusterCartesianCoordinates vector to later allocate the hough transform accumulator
+void determineMaxConformalMappingDimensions(int totalNumberOfClusters)
+{
+  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
+    if (abs(getClusterCartesianX(i)) > aMax) {
+      aMax = ceil(abs(getClusterConformalMappingAlpha(i)));
+    }
+    if (abs(getClusterCartesianY(i)) > bMax) {
+      bMax = ceil(abs(getClusterConformalMappingBeta(i)));
+    }
+  }
+  cout << "aMax: " << aMax << " bMax: " << bMax << endl;
 }
 
 void printData(int totalNumberOfClusters)
@@ -586,26 +675,39 @@ int main(int argc, char** argv)
   // printData(totalNumberOfClusters);
 
   drawCartesianClusters(totalNumberOfClusters);
-  drawCartesianClusters1D(totalNumberOfClusters);
+  //drawCartesianClusters1D(totalNumberOfClusters);
 
-  // Transform the cartesian coordinate system into the conformal mapping system
+  // Convert the TPC cluster coordinates from the cartesian to the conformal mapping system
   conformalMapping(totalNumberOfClusters);
 
   drawConformalMappingClusters(totalNumberOfClusters);
 
   // Determine the minimum and maximum values of eta. That way the TPC digits can be grouped into pseudorapidity bins
   determineMinMaxPseudoRapidity(totalNumberOfClusters);
-  return 0;
-  drawConformalMappingClusters1D(totalNumberOfClusters);
+
+  //drawConformalMappingClusters1D(totalNumberOfClusters);
 
   // Determine the maximum dimensions of the clusters for the accumulator
-  determineMaxDimensions(totalNumberOfClusters);
+  determineMaxCartesianDimensions(totalNumberOfClusters);
 
-  // Perform the hough transform on the clusters
-  transform(totalNumberOfClusters);
+  // Perform the hough transform on the TPC clusters for the cartesian system
+  //transformCartesian(totalNumberOfClusters);
 
-  // Determine if any lines were found
-  calculateTracks(totalNumberOfClusters);
+  // Determine the maximum dimensions of the clusters for the accumulator
+  determineMaxConformalMappingDimensions(totalNumberOfClusters);
+
+  // Perform the hough transform on the TPC clusters for the conformal mapping system
+  transformConformalMapping(totalNumberOfClusters);
+
+  // Locate tracks
+  calculateConformalMappingTracks(totalNumberOfClusters);
+
+  // Draw the reconstructed tracks
+  drawTracks();
+
+  return 0;
+  /// Locate tracks
+  calculateCartesianTracks(totalNumberOfClusters);
 
   // Draw the reconstructed tracks
   drawTracks();
