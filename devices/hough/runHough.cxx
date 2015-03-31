@@ -27,9 +27,12 @@ vector<float> clusterConformalMappingCoordinates;
 vector<unsigned int> accumulator;
 vector<int> trackCoordinates;
 
-int xMax = 0.0;
-int yMax = 0.0;
-int zMax = 0.0;
+int xMax = 0;
+int yMax = 0;
+int zMax = 0;
+
+float etaMin;
+float etaMax;
 
 int rMax;
 int rResolution;
@@ -108,17 +111,17 @@ float getClusterCartesianZ(int clusterNumber)
   return clusterCartesianCoordinates[clusterNumber * clusterParameters + 3];
 }
 
-float getClusterConformalMappingX(int clusterNumber)
+float getClusterConformalMappingAlpha(int clusterNumber)
 {
   return clusterConformalMappingCoordinates[clusterNumber * clusterParameters + 1];
 }
 
-float getClusterConformalMappingY(int clusterNumber)
+float getClusterConformalMappingBeta(int clusterNumber)
 {
   return clusterConformalMappingCoordinates[clusterNumber * clusterParameters + 2];
 }
 
-float getClusterConformalMappingZ(int clusterNumber)
+float getClusterConformalMappingEta(int clusterNumber)
 {
   return clusterConformalMappingCoordinates[clusterNumber * clusterParameters + 3];
 }
@@ -231,7 +234,7 @@ void drawConformalMappingClusters1D(int totalNumberOfClusters)
   TGraph* gr7 = new TGraph();
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    gr7->SetPoint(i, getClusterConformalMappingX(i), getClusterConformalMappingY(i));
+    gr7->SetPoint(i, getClusterConformalMappingAlpha(i), getClusterConformalMappingBeta(i));
   }
 
   // Draw with colored dots
@@ -324,13 +327,14 @@ void conformalMapping(int totalNumberOfClusters)
     // Equation (2) from paper [1]
     float alpha = x / (x * x + y * y);
     float beta = y / (x * x + y * y);
+    float eta = calculatePseudoRapidity(i);
 
-    cout << "A: " << alpha << " B: " << beta << " η: " << calculatePseudoRapidity(i) << endl;
+    cout << "X: " << x << " Y: " << y << " A: " << alpha << " B: " << beta << " η: " << eta << endl;
 
     clusterConformalMappingCoordinates.push_back((float)getClusterID(i));
     clusterConformalMappingCoordinates.push_back(alpha);
     clusterConformalMappingCoordinates.push_back(beta);
-    clusterConformalMappingCoordinates.push_back(0.0);
+    clusterConformalMappingCoordinates.push_back(eta);
   }
 }
 
@@ -365,9 +369,31 @@ void transform(int totalNumberOfClusters)
   }
 }
 
+/// Determine the minimum and maximum values of the pseudorapidity (eta). That way, the TPC digits can be transformed in
+/// two dimensions instead of three by groups of similar pseudorapidity
+void determineMinMaxPseudoRapidity(int totalNumberOfClusters)
+{
+  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
+
+    float eta = getClusterConformalMappingEta(i);
+
+    // Set initial values to etaMin and etaMax
+    if (i == 0) {
+      etaMin = eta;
+      etaMax = eta;
+    }
+
+    if (eta < etaMin) {
+      etaMin = eta;
+    } else if (eta > etaMax) {
+      etaMax = eta;
+    }
+  }
+  cout << "Minimum eta: " << etaMin << " Maximum eta: " << etaMax << endl;
+}
+
 /// Determine the maximum ceiling to X,Y,Z coordinates from the clusterCartesianCoordinates vector to later allocate the
-/// hough
-/// transform accumulator
+/// hough transform accumulator
 void determineMaxDimensions(int totalNumberOfClusters)
 {
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
@@ -546,7 +572,10 @@ int main(int argc, char** argv)
 
   // Transform the cartesian coordinate system into the conformal mapping system
   conformalMapping(totalNumberOfClusters);
-return 0;
+
+  // Determine the minimum and maximum values of eta. That way the TPC digits can be grouped into pseudorapidity bins
+  determineMinMaxPseudoRapidity(totalNumberOfClusters);
+  return 0;
   drawConformalMappingClusters1D(totalNumberOfClusters);
 
   // Determine the maximum dimensions of the clusters for the accumulator
