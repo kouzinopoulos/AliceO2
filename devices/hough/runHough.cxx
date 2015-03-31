@@ -246,18 +246,36 @@ void drawConformalMappingClusters1D(int totalNumberOfClusters)
 
 void drawCartesianClusters(int totalNumberOfClusters)
 {
-  TCanvas* c1 = new TCanvas("c1", "Cartesian clusters", 800, 600);
-  TGraph2D* dt = new TGraph2D(totalNumberOfClusters);
+  TCanvas* cartesianClustersCanvas = new TCanvas("cartesianClustersCanvas", "Cartesian clusters", 800, 600);
+  TGraph2D* cartesianClustersGraph2D = new TGraph2D(totalNumberOfClusters);
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    dt->SetPoint(i, getClusterCartesianX(i), getClusterCartesianY(i), getClusterCartesianZ(i));
+    cartesianClustersGraph2D->SetPoint(i, getClusterCartesianX(i), getClusterCartesianY(i), getClusterCartesianZ(i));
   }
 
   // Draw with colored dots
-  dt->SetMarkerStyle(2);
-  dt->Draw("pcol");
+  cartesianClustersGraph2D->SetMarkerStyle(6);
+  cartesianClustersGraph2D->SetTitle("TPC Clusters in x, y, z");
+  cartesianClustersGraph2D->Draw("pcol");
 
-  c1->Print("clusters.pdf");
+  cartesianClustersCanvas->Print("cartesianClusters.pdf");
+}
+
+void drawConformalMappingClusters(int totalNumberOfClusters)
+{
+  TCanvas* conformalMappingClustersCanvas = new TCanvas("conformalMappingClustersCanvas", "Conformal Mapping clusters", 800, 600);
+  TGraph2D* conformalMappingClustersGraph2D = new TGraph2D(totalNumberOfClusters);
+
+  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
+    conformalMappingClustersGraph2D->SetPoint(i, getClusterConformalMappingAlpha(i), getClusterConformalMappingBeta(i), getClusterConformalMappingEta(i));
+  }
+
+  // Draw with colored dots
+  conformalMappingClustersGraph2D->SetMarkerStyle(6);
+  conformalMappingClustersGraph2D->SetTitle("TPC Clusters in a, b, eta");
+  conformalMappingClustersGraph2D->Draw("pcol");
+
+  conformalMappingClustersCanvas->Print("conformalMappingClusters.pdf");
 }
 
 // Determine if the current value is the maximum in an area of 9x9 points
@@ -563,7 +581,7 @@ int main(int argc, char** argv)
       clusterCartesianCoordinates[kk * 4 + 3] = 0;
     }*/
 
-  totalNumberOfClusters = 4000;
+  totalNumberOfClusters = 5000;
 
   // printData(totalNumberOfClusters);
 
@@ -572,6 +590,8 @@ int main(int argc, char** argv)
 
   // Transform the cartesian coordinate system into the conformal mapping system
   conformalMapping(totalNumberOfClusters);
+
+  drawConformalMappingClusters(totalNumberOfClusters);
 
   // Determine the minimum and maximum values of eta. That way the TPC digits can be grouped into pseudorapidity bins
   determineMinMaxPseudoRapidity(totalNumberOfClusters);
