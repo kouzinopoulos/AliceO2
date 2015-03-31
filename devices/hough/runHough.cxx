@@ -40,8 +40,10 @@ int rMax;
 int rResolution;
 int thetaMax;
 
+// project parameters
 int houghThreshold = 6;
 int pseudorapiditySteps = 100;
+
 
 // sin and cos expect values in radians instead of degrees
 #define DEG2RAD 0.017453293f
@@ -61,30 +63,30 @@ int getAccumulatorBin(int r, int theta)
   return accumulator[r * thetaMax + theta];
 }
 
-void setTracks(int startX, int startY, int endX, int endY)
+void setTracks(int l1, int m1, int l2, int m2)
 {
-  trackCoordinates.push_back(startX);
-  trackCoordinates.push_back(startY);
-  trackCoordinates.push_back(endX);
-  trackCoordinates.push_back(endY);
+  trackCoordinates.push_back(l1);
+  trackCoordinates.push_back(m1);
+  trackCoordinates.push_back(l2);
+  trackCoordinates.push_back(m2);
 }
 
-int getTrackStartX(int trackNumber)
+int getTrackM1(int trackNumber)
 {
   return trackCoordinates[trackNumber * 4 + 0];
 }
 
-int getTrackStartY(int trackNumber)
+int getTrackL1(int trackNumber)
 {
   return trackCoordinates[trackNumber * 4 + 1];
 }
 
-int getTrackEndX(int trackNumber)
+int getTrackM2(int trackNumber)
 {
   return trackCoordinates[trackNumber * 4 + 2];
 }
 
-int getTrackEndY(int trackNumber)
+int getTrackL2(int trackNumber)
 {
   return trackCoordinates[trackNumber * 4 + 3];
 }
@@ -153,8 +155,8 @@ void drawTracks()
 
     gr[i] = new TGraph();
 
-    gr[i]->SetPoint(i * 2 + 0, getTrackStartX(i), getTrackStartY(i));
-    gr[i]->SetPoint(i * 2 + 1, getTrackEndX(i), getTrackEndY(i));
+    gr[i]->SetPoint(i * 2 + 0, getTrackM1(i), getTrackL1(i));
+    gr[i]->SetPoint(i * 2 + 1, getTrackM2(i), getTrackL2(i));
 
     if (i == 0) {
       gr[i]->Draw("AC");
@@ -298,7 +300,7 @@ int localAccumulatorMaxima(int r, int theta)
   return max;
 }
 
-void calculateConformalMappingTracks(int totalNumberOfClusters)
+void calculateTracks(int totalNumberOfClusters)
 {
   /*  // DEBUG
     for (Int_t r = 0; r < 2 * rMax * rResolution; r++) {
@@ -310,7 +312,8 @@ void calculateConformalMappingTracks(int totalNumberOfClusters)
       cout << endl;
     }
   */
-  int startA, startB, endA, endB;
+  // The track will have coordinates (l1,m1), (l2,m2)
+  int l1, m1, l2, m2;
 
   for (Int_t r = 0; r < 2 * rMax * rResolution; r++) {
     for (Int_t theta = 0; theta < thetaMax; theta++) {
@@ -320,61 +323,20 @@ void calculateConformalMappingTracks(int totalNumberOfClusters)
         }
 
         if (theta >= 45 && theta <= 135) {
-          startA = 0;
-          startB = (((double)r / rResolution) - rMax - startA * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
-          endA = aMax;
-          endB = (((double)r / rResolution) - rMax - endA * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
+          l1 = 0;
+          m1 = (((double)r / rResolution) - rMax - l1 * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
+          l2 = xMax;
+          m2 = (((double)r / rResolution) - rMax - l2 * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
         } else {
-          startB = 0;
-          startA = (((double)r / rResolution) - rMax - startB * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
-          endB = bMax;
-          endA = (((double)r / rResolution) - rMax - endB * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
+          m1 = 0;
+          l1 = (((double)r / rResolution) - rMax - m1 * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
+          m2 = yMax;
+          l2 = (((double)r / rResolution) - rMax - m2 * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
         }
         cout << "Found a track at [" << ((double)r / rResolution) - rMax << "][" << theta << "]" << endl
-             << "Track coordinates: " << startA << "," << startB << " - " << endA << "," << endB << endl;
+             << "Track coordinates: " << l1 << "," << m1 << " - " << l2 << "," << m2 << endl;
 
-        setTracks(startA, startB, endA, endB);
-      }
-    }
-  }
-}
-
-void calculateCartesianTracks(int totalNumberOfClusters)
-{
-  /*  // DEBUG
-    for (Int_t r = 0; r < 2 * rMax * rResolution; r++) {
-      cout << r << ": " << setw(3);
-
-      for (Int_t theta = 0; theta < thetaMax; theta++) {
-        cout << theta << ": " << getAccumulatorBin(r, theta) << " ";
-      }
-      cout << endl;
-    }
-  */
-  int startX, startY, endX, endY;
-
-  for (Int_t r = 0; r < 2 * rMax * rResolution; r++) {
-    for (Int_t theta = 0; theta < thetaMax; theta++) {
-      if (getAccumulatorBin(r, theta) >= houghThreshold) {
-        if (localAccumulatorMaxima(r, theta) > getAccumulatorBin(r, theta)) {
-          continue;
-        }
-
-        if (theta >= 45 && theta <= 135) {
-          startX = 0;
-          startY = (((double)r / rResolution) - rMax - startX * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
-          endX = xMax;
-          endY = (((double)r / rResolution) - rMax - endX * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
-        } else {
-          startY = 0;
-          startX = (((double)r / rResolution) - rMax - startY * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
-          endY = yMax;
-          endX = (((double)r / rResolution) - rMax - endY * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
-        }
-        cout << "Found a track at [" << ((double)r / rResolution) - rMax << "][" << theta << "]" << endl
-             << "Track coordinates: " << startX << "," << startY << " - " << endX << "," << endY << endl;
-
-        setTracks(startX, startY, endX, endY);
+        setTracks(l1, m1, l2, m2);
       }
     }
   }
@@ -700,17 +662,20 @@ int main(int argc, char** argv)
   transformConformalMapping(totalNumberOfClusters);
 
   // Locate tracks
-  calculateConformalMappingTracks(totalNumberOfClusters);
+  calculateTracks(totalNumberOfClusters);
 
   // Draw the reconstructed tracks
   drawTracks();
 
   return 0;
   /// Locate tracks
-  calculateCartesianTracks(totalNumberOfClusters);
+  calculateTracks(totalNumberOfClusters);
 
   // Draw the reconstructed tracks
   drawTracks();
+
+  //Clear the track coordinates so the vector can be used for the conformal mapping tracker
+  trackCoordinates.clear();
 
   // Draw the accumulator data as curves
   drawAccumulatorCurves(totalNumberOfClusters);
