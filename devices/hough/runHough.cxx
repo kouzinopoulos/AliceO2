@@ -43,13 +43,13 @@ int thetaMax;
 
 // project parameters
 int houghThreshold = 53;
-int etaResolution = 100;
+int etaResolution = 20;
 
 // By setting rResolution = 1, r = 18.6 and r = 19.2 for theta = 48 will both cause bin(19,48) to increase. With a
 // resoution of rResolution = 10, they will cause bin(186,48) and bin(192,48) to increase respectively.
 // Now rResolution = 100 means that there will be 100 bins for r: 0 - 99. Converting r -> rBin and rBin -> r is done by
 // methods getRValue and getRBinValue
-int rResolution = 1000;
+int rResolution = 100000;
 
 // sin and cos expect values in radians instead of degrees
 #define DEG2RAD 0.017453293f
@@ -208,10 +208,10 @@ Double_t calculatePseudoRapidity(int clusterNumber)
   return eta;
 }
 
-void drawTracks()
+void drawTracks(int totalNumberOfClusters)
 {
   TCanvas* trackCanvas = new TCanvas("trackCanvas", "Reconstructed tracks", 0, 0, 800, 600);
-  TGraph* trackGraph[getNumberOfTracks()];
+  TGraph* trackGraph[totalNumberOfClusters];
 
   cout << "Number of tracks: " << getNumberOfTracks() << endl;
 
@@ -221,6 +221,10 @@ void drawTracks()
   }
 
   for (int i = 0; i < getNumberOfTracks(); i++) {
+
+    //DEBUG
+    if (getTrackEtaSlice(i) != 79)
+      continue;
 
     trackGraph[i] = new TGraph();
 
@@ -232,10 +236,6 @@ void drawTracks()
     } else {
       trackGraph[i]->Draw("CP");
     }
-
-    trackGraph[i]->GetXaxis()->SetLimits(130, 161);
-    trackGraph[i]->SetMinimum(0);
-    trackGraph[i]->SetMaximum(30);
   }
   trackCanvas->Print("tracks.pdf");
 }
@@ -268,17 +268,19 @@ void drawAccumulatorCurves(int totalNumberOfClusters)
   c4->Print("accumulatorCurves.pdf");
 }
 
-void drawAccumulatorHistogram(int totalNumberOfClusters)
+void drawAccumulatorHistogram()
 {
   TCanvas* c5 = new TCanvas("c5", "Accumulator histogram", 0, 0, 800, 600);
   TH2F* h =
-    new TH2F("h", "Accumulator histogram", 2 * rMax * rResolution, 0, 2 * rMax * rResolution, thetaMax, 0, thetaMax);
+    new TH2F("h", "Accumulator histogram", rResolution, 0, rResolution, thetaMax, 0, thetaMax);
 
   h->SetFillColor(46);
 
-  for (Int_t r = 0; r < 2 * rMax * rResolution; r++) {
+  for (Int_t r = 0; r < rResolution; r++) {
     for (Int_t theta = 0; theta < thetaMax; theta++) {
-      h->SetBinContent(r, theta, getAccumulatorBin(0, r, theta));
+      if (getAccumulatorBin(15, r, theta) > 0) {
+        h->SetBinContent(r, theta, getAccumulatorBin(15, r, theta));
+      }
     }
   }
 
@@ -286,36 +288,39 @@ void drawAccumulatorHistogram(int totalNumberOfClusters)
   c5->Print("accumulatorHistogram.pdf");
 }
 
-void drawCartesianClusters1D(int totalNumberOfClusters)
+void drawCartesianClusters1D(int etaSlice, int totalNumberOfClusters)
 {
-  TCanvas* c3 = new TCanvas("c1", "Cartesian clusters", 0, 0, 800, 600);
-  TGraph* gr3 = new TGraph();
+  TCanvas* cartesianClustersCanvas1D = new TCanvas("cartesianClustersCanvas1D", "Cartesian clusters");
+  TGraph* cartesianClustersGraph1D = new TGraph();
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    gr3->SetPoint(i, getClusterCartesianX(i), getClusterCartesianY(i));
+    if (getClusterConformalMappingEtaSlice(i) == etaSlice) {
+      cartesianClustersGraph1D->SetPoint(i, getClusterCartesianX(i), getClusterCartesianY(i));
+    }
   }
 
-  // Draw with colored dots
-  gr3->SetMarkerStyle(1);
-  gr3->Draw("A*");
+  cartesianClustersGraph1D->SetMarkerStyle(7);
+  cartesianClustersGraph1D->Draw("AP");
+  //cartesianClustersGraph1D->GetXaxis()->SetRangeUser(70,250);
 
-  c3->Print("cartesian_clusters.pdf");
+  cartesianClustersCanvas1D->Print("cartesianClusters1D.pdf");
 }
 
-void drawConformalMappingClusters1D(int totalNumberOfClusters)
+void drawConformalMappingClusters1D(int etaSlice, int totalNumberOfClusters)
 {
   TCanvas* c7 = new TCanvas("c1", "Conformal mapping clusters", 0, 0, 800, 600);
   TGraph* gr7 = new TGraph();
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    gr7->SetPoint(i, getClusterConformalMappingAlpha(i), getClusterConformalMappingBeta(i));
+    if (getClusterConformalMappingEtaSlice(i) == etaSlice) {
+      gr7->SetPoint(i, getClusterConformalMappingAlpha(i), getClusterConformalMappingBeta(i));
+    }
   }
 
-  // Draw with colored dots
-  gr7->SetMarkerStyle(1);
-  gr7->Draw("A*");
+  gr7->SetMarkerStyle(7);
+  gr7->Draw("AP");
 
-  c7->Print("conformal_mapping_clusters.pdf");
+  c7->Print("conformalMappingClusters1D.pdf");
 }
 
 void drawCartesianClusters(int totalNumberOfClusters)
@@ -334,7 +339,7 @@ void drawCartesianClusters(int totalNumberOfClusters)
   cartesianClustersGraph2D->SetTitle("TPC Clusters in x, y, z");
   cartesianClustersGraph2D->Draw("pcol");
 
-  cartesianClustersCanvas->Print("cartesianClusters.pdf");
+  cartesianClustersCanvas->Print("cartesianClusters2D.pdf");
 }
 
 void drawConformalMappingClusters(int totalNumberOfClusters)
@@ -375,14 +380,14 @@ int localAccumulatorMaxima(int etaSlice, int r, int theta)
 
 /// Determine the start and end coordinates of all the tracks, calculated from the local maxima of the accumulator
 /// values that exceed a given threshold
-void calculateTracks(int etaSlice)
+void trackFinding(int etaSlice)
 {
   // The track will have coordinates (l1,m1), (l2,m2)
   float l1, m1, l2, m2;
 
   int trackCount = 0;
 
-  for (Int_t rBin = 0; rBin < 2 * rMax * rResolution; rBin++) {
+  for (Int_t rBin = 0; rBin < rResolution; rBin++) {
     for (Int_t theta = 0; theta < thetaMax; theta++) {
       if (getAccumulatorBin(etaSlice, rBin, theta) >= houghThreshold) {
         if (localAccumulatorMaxima(etaSlice, rBin, theta) > getAccumulatorBin(etaSlice, rBin, theta)) {
@@ -393,13 +398,13 @@ void calculateTracks(int etaSlice)
           //y = (r - x cos(t)) / sin(t)
           l1 = 0.0;
           m1 = (getRValue(rBin) - l1 * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
-          l2 = xMax;
+          l2 = aMax;
           m2 = (getRValue(rBin) - l2 * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
         } else {
           //x = (r - y sin(t)) / cos(t);
           m1 = 0.0;
           l1 = (getRValue(rBin) - m1 * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
-          m2 = yMax;
+          m2 = bMax;
           l2 = (getRValue(rBin) - m2 * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
         }
         //cout << "Found a track at [" << etaSlice << "][" << getRValue(rBin) << "][" << theta << "] with a peak of " << getAccumulatorBin(etaSlice, rBin, theta) << " points"
@@ -476,14 +481,16 @@ void transformConformalMapping(int totalNumberOfClusters)
   thetaMax = 180;
   // Trigonometrically, the maximum distance is designated by the square root of the summation of the squares of the x
   // and y dimensions
-  //rMin = ceil(sqrt(aMin * aMin + bMin * bMin));
   rMax = ceil(sqrt(aMax * aMax + bMax * bMax));
 
   //cout << "rMin: " << -rMax << " rMax: " << rMax << endl;
 
   // The lines will have -rMax <= r <= rMax and 0 <= theta <= thetaMax. The total space needed is thus 2 * rMax *
   // thetaMax
-  accumulator.resize(2 * rMax * thetaMax * rResolution * etaResolution, 0);
+  accumulator.resize(etaResolution * rResolution * thetaMax + rResolution * thetaMax + thetaMax, 0);
+
+  cout << "Accumulator size: " << 2 * rMax * thetaMax * rResolution * etaResolution << endl;
+  cout << "Alternative accumulator size: " << etaResolution * rResolution * thetaMax + rResolution * thetaMax + thetaMax << endl;
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     float a = getClusterConformalMappingAlpha(i);
@@ -495,8 +502,10 @@ void transformConformalMapping(int totalNumberOfClusters)
       double r = (a * cos(theta * DEG2RAD)) + (b * sin(theta * DEG2RAD));
       int rBin = getRBinValue(r);
 
-      //cout << "i: " << i << " a: " << a << " b: " << b << " theta: " << theta << " rMin: " << -rMax << " r: " << r
-      //     << " rMax: " << rMax << " rBin: " << rBin << " eta: " << eta << " etaSlice: " << etaSlice << endl;
+      if (etaSlice == 20 ) {
+        cout << "Cluster: " << i << " a: " << a << " b: " << b << " theta: " << theta << " rMin: " << -rMax << " r: " << r
+             << " rMax: " << rMax << " rBin: " << rBin << " eta: " << eta << " etaSlice: " << etaSlice << endl;
+      }
 
       // Use a discreet value for r by rounding r. Then, rMax is added to r to change its range from -rMax <= r <= rMax
       // to 0 <= r <= 2 * rMax
@@ -714,11 +723,8 @@ int main(int argc, char** argv)
     setClusterCartesianParameters(kk, 10, 19.0 + kk - 11, 1);
   }
 */
-  totalNumberOfClusters = 1000;
+  totalNumberOfClusters = 20000;
   // printData(totalNumberOfClusters);
-
-  drawCartesianClusters(totalNumberOfClusters);
-  // drawCartesianClusters1D(totalNumberOfClusters);
 
   // Allocate space for the conformal mapping parameter vector
   clusterConformalMappingCoordinates.resize(totalNumberOfClusters * clusterConformalMappingParameters);
@@ -728,8 +734,6 @@ int main(int argc, char** argv)
 
   // Convert the TPC cluster coordinates from the cartesian to the conformal mapping system
   conformalMapping(totalNumberOfClusters);
-
-  drawConformalMappingClusters(totalNumberOfClusters);
 
   // drawConformalMappingClusters1D(totalNumberOfClusters);
 
@@ -746,15 +750,43 @@ int main(int argc, char** argv)
   transformConformalMapping(totalNumberOfClusters);
 
   // Locate tracks for each η slice
-  for (int etaSlice = 0; etaSlice <= etaResolution; etaSlice++) {
-    calculateTracks(etaSlice);
+/*  for (int etaSlice = 0; etaSlice <= etaResolution; etaSlice++) {
+    trackFinding(etaSlice);
+  }*/
+  trackFinding(15);
+
+  //drawAccumulatorHistogram();
+
+  drawCartesianClusters(totalNumberOfClusters);
+  drawCartesianClusters1D(15, totalNumberOfClusters);
+  drawConformalMappingClusters(totalNumberOfClusters);
+  drawConformalMappingClusters1D(15, totalNumberOfClusters);
+  drawTracks(totalNumberOfClusters);
+
+  int i;
+  int array[etaResolution + 1];
+  for ( i = 0; i <= etaResolution; i++) {
+    array[i] = 0;
   }
 
-  // Draw the accumulator data as a histogram
-  drawAccumulatorHistogram(totalNumberOfClusters);
 
-  // Draw the reconstructed tracks
-  drawTracks();
+  for ( i = 0; i < totalNumberOfClusters; i++) {
+    array[getClusterConformalMappingEtaSlice(i)]++;
+  }
+
+  for ( i = 0; i <= etaResolution; i++) {
+    cout << i << " " << array[i] << endl;
+  }
+
+/*
+  for (int theta = 0; theta < thetaMax; theta++) {
+    for (int rBin = 0; rBin < rResolution; rBin++) {
+      if ( getAccumulatorBin(15, rBin, theta ) > 0 ) {
+        cout << theta << " " << rBin << " " << getAccumulatorBin(15, rBin, theta ) << endl;
+      }
+    }
+  }
+*/
 
   return 0;
 
