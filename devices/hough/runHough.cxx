@@ -217,20 +217,6 @@ void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice)
   clusterData[clusterNumber].mEtaSlice = etaSlice;
 }
 
-/// Calculate an approximate value for η. See [1]:p8 for more information. Values below taken from
-/// AliHLTConfMapPoint.cxx
-Double_t calculatePseudoRapidity(int clusterNumber)
-{
-
-  Double_t radial = sqrt(getClusterX(clusterNumber) * getClusterX(clusterNumber) +
-                         getClusterY(clusterNumber) * getClusterY(clusterNumber) +
-                         getClusterZ(clusterNumber) * getClusterZ(clusterNumber));
-  Double_t eta =
-    0.5 * log((radial + getClusterZ(clusterNumber)) / (radial - getClusterZ(clusterNumber)));
-
-  return eta;
-}
-
 void drawTracks(int totalNumberOfClusters)
 {
   TCanvas* trackCanvas = new TCanvas("trackCanvas", "Reconstructed tracks", 0, 0, 800, 600);
@@ -440,6 +426,39 @@ void trackFinding(int etaSlice)
   }
 }
 
+/// Calculate an approximate value for η. See [1]:p8 for more information. Values below taken from
+/// AliHLTConfMapPoint.cxx
+void calculateEta(int totalNumberOfClusters)
+{
+  for (int i = 0; i < totalNumberOfClusters; i++) {
+    Double_t radial = sqrt(getClusterX(i) * getClusterX(i) +
+                           getClusterY(i) * getClusterY(i) +
+                           getClusterZ(i) * getClusterZ(i));
+    Double_t eta =
+     0.5 * log((radial + getClusterZ(i)) / (radial - getClusterZ(i)));
+
+    // Store eta to be later used by the conformalMapping method
+    setClusterEta(i, eta);
+  }
+}
+
+/// Discretize the eta values of all clusters into etaResolution bins
+void calculateEtaSlice(int totalNumberOfClusters)
+{
+  for (int i = 0; i < totalNumberOfClusters; i++) {
+    Float_t eta = getClusterEta(i);
+
+    if (etaMax - etaMin == 0) {
+      cerr << "The minimum and maximum eta value of all clusters is identical" << endl;
+      exit(1);
+    }
+
+    UInt_t etaSlice = (etaResolution * (eta - etaMin)) / (etaMax - etaMin);
+
+    setClusterEtaSlice(i, etaSlice);
+  }
+}
+
 void conformalMapping(int totalNumberOfClusters)
 {
   for (int i = 0; i < totalNumberOfClusters; i++) {
@@ -449,21 +468,12 @@ void conformalMapping(int totalNumberOfClusters)
     // Equation (2) from paper [1]
     Float_t alpha = x / (x * x + y * y);
     Float_t beta = y / (x * x + y * y);
-    Float_t eta = getClusterEta(i);
-    UInt_t etaSlice;
-
-    if (etaMax - etaMin != 0) {
-      etaSlice = (etaResolution * (eta - etaMin)) / (etaMax - etaMin);
-    } else {
-      etaSlice = 0;
-    }
 
     //cout << "i: " << i << " X: " << x << " Y: " << y << " A: " << alpha << " B: " << beta << " η: " << eta << " η slice: " << etaSlice
     //     << endl;
 
     setClusterAlpha(i, alpha);
     setClusterBeta(i, beta);
-    setClusterEtaSlice(i, etaSlice);
   }
 }
 
@@ -538,10 +548,7 @@ void determineMinMaxEta(int totalNumberOfClusters)
 {
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
 
-    Float_t eta = calculatePseudoRapidity(i);
-
-    // Store eta to be later used by the conformalMapping method
-    setClusterEta(i, eta);
+    Float_t eta = getClusterEta(i);
 
     // Set initial values to etaMin and etaMax
     if (i == 0) {
@@ -750,8 +757,13 @@ int main(int argc, char** argv)
   // Allocate space for the conformal mapping parameter vector
   clusterConformalMappingCoordinates.resize(totalNumberOfClusters * clusterConformalMappingParameters);
 
+  calculateEta(totalNumberOfClusters);
+
   // Determine the minimum and maximum values of eta. That way the TPC digits can be grouped into pseudorapidity bins
   determineMinMaxEta(totalNumberOfClusters);
+
+  // Discretize the eta values of all clusters into etaResolution bins
+  calculateEtaSlice(totalNumberOfClusters);
 
   // Convert the TPC cluster coordinates from the cartesian to the conformal mapping system
   conformalMapping(totalNumberOfClusters);
