@@ -6,216 +6,7 @@
 /// Instruments and Methods in Physics Research Section A: Accelerators, Spectrometers, Detectors and Associated
 /// Equipment 566.1 (2006): 35-39.
 
-#include "AliHLTTPCTrackGeometry.h"
-#include "AliHLTTPCClusterDataFormat.h"
-#include "AliHLTTPCSpacePointContainer.h"
-#include "AliHLTComponent.h"
-#include "AliHLTTPCDefinitions.h"
-
-#include "TCanvas.h"
-#include "TH2F.h"
-#include "TGraph.h"
-#include "TGraph2D.h"
-
-#include "boost/filesystem.hpp"
-
-#include <sstream>
-
-// FIXME: convert float into double for bigger precision
-struct clusterDataFormat {
-  UInt_t mID;
-  UInt_t mCharge;
-
-  Float_t mX;
-  Float_t mY;
-  Float_t mZ;
-
-  Float_t mAlpha;
-  Float_t mBeta;
-  Float_t mEta;
-
-  UInt_t mEtaSlice;
-};
-
-struct trackDataFormat {
-  Float_t mAlpha1;
-  Float_t mBeta1;
-  Float_t mAlpha2;
-  Float_t mBeta2;
-
-  UInt_t mEtaSlice;
-};
-
-std::unique_ptr<AliHLTTPCSpacePointContainer> spacepoints;
-std::vector<clusterDataFormat> clusterData;
-std::vector<trackDataFormat> trackData;
-
-std::vector<unsigned int> accumulator;
-
-int xMax = 0;
-int yMax = 0;
-int zMax = 0;
-int aMin = 0;
-int aMax = 0;
-int bMin = 0;
-int bMax = 0;
-
-float etaMin;
-float etaMax;
-
-int rMax;
-int thetaMax;
-
-// project parameters
-int houghThreshold = 53;
-int etaResolution = 20;
-
-// By setting rResolution = 1, r = 18.6 and r = 19.2 for theta = 48 will both cause bin(19,48) to increase. With a
-// resoution of rResolution = 10, they will cause bin(186,48) and bin(192,48) to increase respectively.
-// Now rResolution = 100 means that there will be 100 bins for r: 0 - 99. Converting r -> rBin and rBin -> r is done by
-// methods getRValue and getRBinValue
-int rResolution = 100000;
-
-// sin and cos expect values in radians instead of degrees
-#define DEG2RAD 0.017453293f
-
-void setAccumulatorBin(int etaSlice, int r, int theta)
-{
-  accumulator[etaSlice * (rResolution * thetaMax) + r * thetaMax + theta]++;
-}
-
-int getAccumulatorBin(int etaSlice, int r, int theta)
-{
-  return accumulator[etaSlice * (rResolution * thetaMax) + r * thetaMax + theta];
-}
-
-//Solve getRBinValue to r
-float getRValue(int rBin) {
-  int rMin = -rMax;
-  return (float)((rMax - rMin) * rBin + rMin * rResolution) / rResolution;
-}
-
-int getRBinValue(float r) {
-  int rMin = -rMax;
-  return ((r - rMin) * rResolution)/ (rMax - rMin);
-}
-
-void setTrackParameters(UInt_t etaSlice, Float_t alpha1, Float_t beta1, Float_t alpha2, Float_t beta2)
-{
-  trackDataFormat track;
-  track.mEtaSlice = etaSlice;
-  track.mAlpha1 = alpha1;
-  track.mBeta1 = beta1;
-  track.mAlpha2 = alpha2;
-  track.mBeta2 = beta2;
-  trackData.push_back(track);
-}
-
-UInt_t getTrackEtaSlice(int trackNumber)
-{
-  return trackData[trackNumber].mEtaSlice;
-}
-
-Float_t getTrackAlpha1(int trackNumber)
-{
-  return trackData[trackNumber].mAlpha1;
-}
-
-Float_t getTrackBeta1(int trackNumber)
-{
-  return trackData[trackNumber].mBeta1;
-}
-
-Float_t getTrackAlpha2(int trackNumber)
-{
-  return trackData[trackNumber].mAlpha2;
-}
-
-Float_t getTrackBeta2(int trackNumber)
-{
-  return trackData[trackNumber].mBeta2;
-}
-
-int getNumberOfTracks()
-{
-  return trackData.size();
-}
-
-UInt_t getClusterID(int clusterNumber)
-{
-  return clusterData[clusterNumber].mID;
-}
-
-Float_t getClusterX(int clusterNumber)
-{
-  return clusterData[clusterNumber].mX;
-}
-
-Float_t getClusterY(int clusterNumber)
-{
-  return clusterData[clusterNumber].mY;
-}
-
-Float_t getClusterZ(int clusterNumber)
-{
-  return clusterData[clusterNumber].mZ;
-}
-
-UInt_t getClusterCharge(int clusterNumber)
-{
-  return clusterData[clusterNumber].mCharge;
-}
-
-void setClusterParameters(UInt_t clusterID, Float_t x, Float_t y, Float_t z, UInt_t charge)
-{
-  clusterDataFormat data;
-  data.mID = clusterID;
-  data.mX = x;
-  data.mY = y;
-  data.mZ = z;
-  data.mCharge = charge;
-  clusterData.push_back(data);
-}
-
-Float_t getClusterAlpha(int clusterNumber)
-{
-  return clusterData[clusterNumber].mAlpha;
-}
-
-Float_t getClusterBeta(int clusterNumber)
-{
-  return clusterData[clusterNumber].mBeta;
-}
-
-Float_t getClusterEta(int clusterNumber)
-{
-  return clusterData[clusterNumber].mEta;
-}
-
-Int_t getClusterEtaSlice(int clusterNumber)
-{
-  return clusterData[clusterNumber].mEtaSlice;
-}
-
-void setClusterAlpha(int clusterNumber, Float_t alpha)
-{
-  clusterData[clusterNumber].mAlpha = alpha;
-}
-
-void setClusterBeta(int clusterNumber, Float_t beta)
-{
-  clusterData[clusterNumber].mBeta = beta;
-}
-
-void setClusterEta(int clusterNumber, Float_t eta)
-{
-  clusterData[clusterNumber].mEta = eta;
-}
-
-void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice)
-{
-  clusterData[clusterNumber].mEtaSlice = etaSlice;
-}
+#include "runHough.h"
 
 void drawTracks(int totalNumberOfClusters)
 {
@@ -226,7 +17,7 @@ void drawTracks(int totalNumberOfClusters)
 
   for (int i = 0; i < getNumberOfTracks(); i++) {
 
-    //DEBUG
+    // DEBUG
     if (getTrackEtaSlice(i) != 79)
       continue;
 
@@ -275,8 +66,7 @@ void drawAccumulatorCurves(int totalNumberOfClusters)
 void drawAccumulatorHistogram()
 {
   TCanvas* c5 = new TCanvas("c5", "Accumulator histogram", 0, 0, 800, 600);
-  TH2F* h =
-    new TH2F("h", "Accumulator histogram", rResolution, 0, rResolution, thetaMax, 0, thetaMax);
+  TH2F* h = new TH2F("h", "Accumulator histogram", rResolution, 0, rResolution, thetaMax, 0, thetaMax);
 
   h->SetFillColor(46);
 
@@ -305,7 +95,7 @@ void drawCartesianClusters1D(int etaSlice, int totalNumberOfClusters)
 
   cartesianClustersGraph1D->SetMarkerStyle(7);
   cartesianClustersGraph1D->Draw("AP");
-  //cartesianClustersGraph1D->GetXaxis()->SetRangeUser(70,250);
+  // cartesianClustersGraph1D->GetXaxis()->SetRangeUser(70,250);
 
   cartesianClustersCanvas1D->Print("cartesianClusters1D.pdf");
 }
@@ -353,8 +143,7 @@ void drawConformalMappingClusters(int totalNumberOfClusters)
   TGraph2D* conformalMappingClustersGraph2D = new TGraph2D(totalNumberOfClusters);
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    conformalMappingClustersGraph2D->SetPoint(i, getClusterAlpha(i), getClusterBeta(i),
-                                              getClusterEta(i));
+    conformalMappingClustersGraph2D->SetPoint(i, getClusterAlpha(i), getClusterBeta(i), getClusterEta(i));
   }
 
   // Draw with colored dots
@@ -399,21 +188,22 @@ void trackFinding(int etaSlice)
         }
 
         if (theta >= 45 && theta <= 135) {
-          //y = (r - x cos(t)) / sin(t)
+          // y = (r - x cos(t)) / sin(t)
           a1 = 0.0;
           b1 = (getRValue(rBin) - a1 * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
           a2 = aMax;
           b2 = (getRValue(rBin) - a2 * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
         } else {
-          //x = (r - y sin(t)) / cos(t);
+          // x = (r - y sin(t)) / cos(t);
           b1 = 0.0;
           a1 = (getRValue(rBin) - b1 * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
           b2 = bMax;
           a2 = (getRValue(rBin) - b2 * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
         }
-        //cout << "Found a track at [" << etaSlice << "][" << getRValue(rBin) << "][" << theta << "] with a peak of " << getAccumulatorBin(etaSlice, rBin, theta) << " points"
+        // cout << "Found a track at [" << etaSlice << "][" << getRValue(rBin) << "][" << theta << "] with a peak of "
+        // << getAccumulatorBin(etaSlice, rBin, theta) << " points"
         //     << endl << "Track coordinates: " << a1 << "," << b1 << " - " << a2 << "," << b2 << endl;
-        //cout << "xMax: " << xMax << " yMax: " << yMax << endl;
+        // cout << "xMax: " << xMax << " yMax: " << yMax << endl;
         trackCount++;
 
         setTrackParameters(etaSlice, a1, b1, a2, b2);
@@ -431,11 +221,9 @@ void trackFinding(int etaSlice)
 void calculateEta(int totalNumberOfClusters)
 {
   for (int i = 0; i < totalNumberOfClusters; i++) {
-    Double_t radial = sqrt(getClusterX(i) * getClusterX(i) +
-                           getClusterY(i) * getClusterY(i) +
-                           getClusterZ(i) * getClusterZ(i));
-    Double_t eta =
-     0.5 * log((radial + getClusterZ(i)) / (radial - getClusterZ(i)));
+    Double_t radial =
+      sqrt(getClusterX(i) * getClusterX(i) + getClusterY(i) * getClusterY(i) + getClusterZ(i) * getClusterZ(i));
+    Double_t eta = 0.5 * log((radial + getClusterZ(i)) / (radial - getClusterZ(i)));
 
     // Store eta to be later used by the conformalMapping method
     setClusterEta(i, eta);
@@ -469,7 +257,8 @@ void conformalMapping(int totalNumberOfClusters)
     Float_t alpha = x / (x * x + y * y);
     Float_t beta = y / (x * x + y * y);
 
-    //cout << "i: " << i << " X: " << x << " Y: " << y << " A: " << alpha << " B: " << beta << " η: " << eta << " η slice: " << etaSlice
+    // cout << "i: " << i << " X: " << x << " Y: " << y << " A: " << alpha << " B: " << beta << " η: " << eta << " η
+    // slice: " << etaSlice
     //     << endl;
 
     setClusterAlpha(i, alpha);
@@ -511,14 +300,15 @@ void transformConformalMapping(int totalNumberOfClusters)
   // and y dimensions
   rMax = ceil(sqrt(aMax * aMax + bMax * bMax));
 
-  //cout << "rMin: " << -rMax << " rMax: " << rMax << endl;
+  // cout << "rMin: " << -rMax << " rMax: " << rMax << endl;
 
   // The lines will have -rMax <= r <= rMax and 0 <= theta <= thetaMax. The total space needed is thus 2 * rMax *
   // thetaMax
   accumulator.resize(etaResolution * rResolution * thetaMax + rResolution * thetaMax + thetaMax, 0);
 
-  cout << "Accumulator size: " << 2 * rMax * thetaMax * rResolution * etaResolution << endl;
-  cout << "Alternative accumulator size: " << etaResolution * rResolution * thetaMax + rResolution * thetaMax + thetaMax << endl;
+  cout << "Accumulator size: " << 2 * rMax* thetaMax* rResolution* etaResolution << endl;
+  cout << "Alternative accumulator size: " << etaResolution* rResolution* thetaMax + rResolution* thetaMax + thetaMax
+       << endl;
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     Float_t a = getClusterAlpha(i);
@@ -530,9 +320,10 @@ void transformConformalMapping(int totalNumberOfClusters)
       double r = (a * cos(theta * DEG2RAD)) + (b * sin(theta * DEG2RAD));
       int rBin = getRBinValue(r);
 
-      if (etaSlice == 20 ) {
-        cout << "Cluster: " << i << " a: " << a << " b: " << b << " theta: " << theta << " rMin: " << -rMax << " r: " << r
-             << " rMax: " << rMax << " rBin: " << rBin << " eta: " << eta << " etaSlice: " << etaSlice << endl;
+      if (etaSlice == 20) {
+        cout << "Cluster: " << i << " a: " << a << " b: " << b << " theta: " << theta << " rMin: " << -rMax
+             << " r: " << r << " rMax: " << rMax << " rBin: " << rBin << " eta: " << eta << " etaSlice: " << etaSlice
+             << endl;
       }
 
       // Use a discreet value for r by rounding r. Then, rMax is added to r to change its range from -rMax <= r <= rMax
@@ -562,7 +353,7 @@ void determineMinMaxEta(int totalNumberOfClusters)
     } else if (eta > etaMax) {
       etaMax = eta;
     }
-}
+  }
   cout << "Minimum eta: " << etaMin << " Maximum eta: " << etaMax << endl;
 }
 
@@ -596,14 +387,13 @@ void determineMinMaxAB(int totalNumberOfClusters)
       bMax = ceil(abs(getClusterBeta(i)));
       continue;
     }
-    if ( getClusterAlpha(i) < aMin ) {
+    if (getClusterAlpha(i) < aMin) {
       aMin = floor(getClusterAlpha(i));
-    }
-    else if (abs(getClusterAlpha(i)) > aMax) {
+    } else if (abs(getClusterAlpha(i)) > aMax) {
       aMax = ceil(abs(getClusterAlpha(i)));
     }
 
-    if ( getClusterBeta(i) < bMin ) {
+    if (getClusterBeta(i) < bMin) {
       bMin = floor(getClusterBeta(i));
     } else if (abs(getClusterBeta(i)) > bMax) {
       bMax = ceil(abs(getClusterBeta(i)));
@@ -618,8 +408,8 @@ void printData(int totalNumberOfClusters)
        << endl;
 
   for (int i = 0; i < totalNumberOfClusters; i++) {
-    cout << (AliHLTUInt32_t)getClusterID(i) << setw(13) << getClusterX(i) << setw(13)
-         << getClusterY(i) << setw(13) << getClusterZ(i) << endl;
+    cout << (AliHLTUInt32_t)getClusterID(i) << setw(13) << getClusterX(i) << setw(13) << getClusterY(i) << setw(13)
+         << getClusterZ(i) << endl;
   }
 }
 
@@ -682,7 +472,7 @@ int processData(std::string dataPath, std::string dataType, std::string dataOrig
     AliHLTUInt32_t clusterID = *element;
 
     setClusterParameters(clusterID, spacepoints->GetX(clusterID), spacepoints->GetY(clusterID),
-                                  spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID));
+                         spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID));
   }
 
   // De-allocate memory space
@@ -716,114 +506,121 @@ int main(int argc, char** argv)
   int totalNumberOfClusters = 0, totalNumberOfDataFiles = 0;
 
   // Traverse the filesystem and execute processData for each cluster file found
-    if (boost::filesystem::exists(dataPath) && boost::filesystem::is_directory(dataPath)) {
-      for (boost::filesystem::directory_iterator directoryIterator(dataPath); directoryIterator != endIterator;
-           ++directoryIterator) {
-        if (boost::filesystem::is_regular_file(directoryIterator->status())) {
-          totalNumberOfClusters += processData(directoryIterator->path().string(), dataType, dataOrigin);
-          totalNumberOfDataFiles++;
-        }
+  if (boost::filesystem::exists(dataPath) && boost::filesystem::is_directory(dataPath)) {
+    for (boost::filesystem::directory_iterator directoryIterator(dataPath); directoryIterator != endIterator;
+         ++directoryIterator) {
+      if (boost::filesystem::is_regular_file(directoryIterator->status())) {
+        totalNumberOfClusters += processData(directoryIterator->path().string(), dataType, dataOrigin);
+        totalNumberOfDataFiles++;
       }
-    } else {
-      std::cerr << "Path " << dataPath.string() << "/ could not be found or does not contain any valid data files"
-                << endl;
-      exit(1);
     }
+  } else {
+    std::cerr << "Path " << dataPath.string() << "/ could not be found or does not contain any valid data files"
+              << endl;
+    exit(1);
+  }
 
-    cout << "Added " << totalNumberOfClusters << " clusters from " << totalNumberOfDataFiles << " data files. Cluster vector size: " << clusterData.size() << endl;
+  cout << "Added " << totalNumberOfClusters << " clusters from " << totalNumberOfDataFiles
+       << " data files. Cluster vector size: " << clusterData.size() << endl;
 
-    if (totalNumberOfClusters != clusterData.size()) {
-      std::cerr << "The cluster vector size does not match the reported number of clusters" << endl;
-      exit(1);
-    }
+  if (totalNumberOfClusters != clusterData.size()) {
+    std::cerr << "The cluster vector size does not match the reported number of clusters" << endl;
+    exit(1);
+  }
 
   // DEBUG
-/*  totalNumberOfClusters = 100;
-  for (int kk = 0; kk < 6; kk++) {
-    setClusterParameters(kk, (float)9.0 + kk, (float)17.0, 1);
-  }
-
-  for (int kk = 6; kk < 11; kk++) {
-    setClusterParameters(kk, 9.0 + kk - 5, 17.0 + kk - 5, 1);
-  }
-
-  for (int kk = 11; kk < 150; kk++) {
-    setClusterParameters(kk, 10, 19.0 + kk - 11, 1);
-  }
-*/
-/*  totalNumberOfClusters = 20000;
-  // printData(totalNumberOfClusters);
-
-  // Allocate space for the conformal mapping parameter vector
-  clusterConformalMappingCoordinates.resize(totalNumberOfClusters * clusterConformalMappingParameters);
-
   calculateEta(totalNumberOfClusters);
-
-  // Determine the minimum and maximum values of eta. That way the TPC digits can be grouped into pseudorapidity bins
   determineMinMaxEta(totalNumberOfClusters);
-
-  // Discretize the eta values of all clusters into etaResolution bins
   calculateEtaSlice(totalNumberOfClusters);
-
-  // Convert the TPC cluster coordinates from the cartesian to the conformal mapping system
-  conformalMapping(totalNumberOfClusters);
-
-  // drawConformalMappingClusters1D(totalNumberOfClusters);
-
-  // Determine the maximum dimensions of the clusters for the accumulator
-  determineMaxCartesianDimensions(totalNumberOfClusters);
-
-  // Perform the hough transform on the TPC clusters for the cartesian system
-  // transformCartesian(totalNumberOfClusters);
-
-  // Determine the maximum dimensions of the clusters for the accumulator
-  determineMinMaxAB(totalNumberOfClusters);
-
-  // Perform the hough transform on the TPC clusters for the conformal mapping system
-  transformConformalMapping(totalNumberOfClusters);
-
-  // Locate tracks for each η slice
-  //for (int etaSlice = 0; etaSlice <= etaResolution; etaSlice++) {
-  //  trackFinding(etaSlice);
-  }
-  trackFinding(15);
-
-  //drawAccumulatorHistogram();
-
-  drawCartesianClusters(totalNumberOfClusters);
   drawCartesianClusters1D(15, totalNumberOfClusters);
-  drawConformalMappingClusters(totalNumberOfClusters);
-  drawConformalMappingClusters1D(15, totalNumberOfClusters);
-  drawTracks(totalNumberOfClusters);
 
-  int i;
-  int array[etaResolution + 1];
-  for ( i = 0; i <= etaResolution; i++) {
-    array[i] = 0;
-  }
-
-
-  for ( i = 0; i < totalNumberOfClusters; i++) {
-    array[getClusterEtaSlice(i)]++;
-  }
-
-  for ( i = 0; i <= etaResolution; i++) {
-    cout << i << " " << array[i] << endl;
-  }
-
-  for (int theta = 0; theta < thetaMax; theta++) {
-    for (int rBin = 0; rBin < rResolution; rBin++) {
-      cout << theta << " " << rBin << " " << getAccumulatorBin(15, rBin, theta ) << endl;
+  // DEBUG
+  /*  totalNumberOfClusters = 100;
+    for (int kk = 0; kk < 6; kk++) {
+      setClusterParameters(kk, (float)9.0 + kk, (float)17.0, 1);
     }
-  }
 
-  return 0;
+    for (int kk = 6; kk < 11; kk++) {
+      setClusterParameters(kk, 9.0 + kk - 5, 17.0 + kk - 5, 1);
+    }
 
-  // Clear the track coordinates so the vector can be used for the conformal mapping tracker
-  trackCoordinates.clear();
+    for (int kk = 11; kk < 150; kk++) {
+      setClusterParameters(kk, 10, 19.0 + kk - 11, 1);
+    }
+  */
+  /*  totalNumberOfClusters = 20000;
+    // printData(totalNumberOfClusters);
 
-  // Draw the accumulator data as curves
-  drawAccumulatorCurves(totalNumberOfClusters);
-*/
+    // Allocate space for the conformal mapping parameter vector
+    clusterConformalMappingCoordinates.resize(totalNumberOfClusters * clusterConformalMappingParameters);
+
+    calculateEta(totalNumberOfClusters);
+
+    // Determine the minimum and maximum values of eta. That way the TPC digits can be grouped into pseudorapidity bins
+    determineMinMaxEta(totalNumberOfClusters);
+
+    // Discretize the eta values of all clusters into etaResolution bins
+    calculateEtaSlice(totalNumberOfClusters);
+
+    // Convert the TPC cluster coordinates from the cartesian to the conformal mapping system
+    conformalMapping(totalNumberOfClusters);
+
+    // drawConformalMappingClusters1D(totalNumberOfClusters);
+
+    // Determine the maximum dimensions of the clusters for the accumulator
+    determineMaxCartesianDimensions(totalNumberOfClusters);
+
+    // Perform the hough transform on the TPC clusters for the cartesian system
+    // transformCartesian(totalNumberOfClusters);
+
+    // Determine the maximum dimensions of the clusters for the accumulator
+    determineMinMaxAB(totalNumberOfClusters);
+
+    // Perform the hough transform on the TPC clusters for the conformal mapping system
+    transformConformalMapping(totalNumberOfClusters);
+
+    // Locate tracks for each η slice
+    //for (int etaSlice = 0; etaSlice <= etaResolution; etaSlice++) {
+    //  trackFinding(etaSlice);
+    }
+    trackFinding(15);
+
+    //drawAccumulatorHistogram();
+
+    drawCartesianClusters(totalNumberOfClusters);
+    drawCartesianClusters1D(15, totalNumberOfClusters);
+    drawConformalMappingClusters(totalNumberOfClusters);
+    drawConformalMappingClusters1D(15, totalNumberOfClusters);
+    drawTracks(totalNumberOfClusters);
+
+    int i;
+    int array[etaResolution + 1];
+    for ( i = 0; i <= etaResolution; i++) {
+      array[i] = 0;
+    }
+
+
+    for ( i = 0; i < totalNumberOfClusters; i++) {
+      array[getClusterEtaSlice(i)]++;
+    }
+
+    for ( i = 0; i <= etaResolution; i++) {
+      cout << i << " " << array[i] << endl;
+    }
+
+    for (int theta = 0; theta < thetaMax; theta++) {
+      for (int rBin = 0; rBin < rResolution; rBin++) {
+        cout << theta << " " << rBin << " " << getAccumulatorBin(15, rBin, theta ) << endl;
+      }
+    }
+
+    return 0;
+
+    // Clear the track coordinates so the vector can be used for the conformal mapping tracker
+    trackCoordinates.clear();
+
+    // Draw the accumulator data as curves
+    drawAccumulatorCurves(totalNumberOfClusters);
+  */
   return 0;
 }
