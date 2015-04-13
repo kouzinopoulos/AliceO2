@@ -21,11 +21,36 @@
 
 #include <sstream>
 
+// FIXME: convert float into double for bigger precision
+struct clusterDataFormat {
+  UInt_t mID;
+  UInt_t mCharge;
+
+  Float_t mX;
+  Float_t mY;
+  Float_t mZ;
+
+  Float_t mAlpha;
+  Float_t mBeta;
+  Float_t mEta;
+
+  UInt_t mEtaSlice;
+};
+
+struct trackDataFormat {
+  Float_t mAlpha1;
+  Float_t mBeta1;
+  Float_t mAlpha2;
+  Float_t mBeta2;
+
+  UInt_t mEtaSlice;
+};
+
 std::unique_ptr<AliHLTTPCSpacePointContainer> spacepoints;
-vector<float> clusterCartesianCoordinates;
-vector<float> clusterConformalMappingCoordinates;
-vector<unsigned int> accumulator;
-vector<int> trackCoordinates;
+std::vector<clusterDataFormat> clusterData;
+std::vector<trackDataFormat> trackData;
+
+std::vector<unsigned int> accumulator;
 
 int xMax = 0;
 int yMax = 0;
@@ -54,18 +79,6 @@ int rResolution = 100000;
 // sin and cos expect values in radians instead of degrees
 #define DEG2RAD 0.017453293f
 
-// For clusters, 4 parameters are stored: ID, x, y and z coordinates
-int clusterCartesianParameters = 4;
-
-// For clusters after conformal mapping, 5 parameters are stored: ID, a, b, η and η slice
-int clusterConformalMappingParameters = 5;
-
-// For tracks found after reconstruction, 5 parameters are stored: η slice, start coordinates (l1,m1) and end
-// coordinates (l2,m2)
-int trackCoordinateParameters = 5;
-
-// FIXME: convert float into double for bigger precision
-
 void setAccumulatorBin(int etaSlice, int r, int theta)
 {
   accumulator[etaSlice * (rResolution * thetaMax) + r * thetaMax + theta]++;
@@ -87,111 +100,115 @@ int getRBinValue(float r) {
   return ((r - rMin) * rResolution)/ (rMax - rMin);
 }
 
-void setTracks(int etaSlice, int l1, int m1, int l2, int m2)
+void setTrackParameters(UInt_t etaSlice, Float_t alpha1, Float_t beta1, Float_t alpha2, Float_t beta2)
 {
-  trackCoordinates.push_back(etaSlice);
-  trackCoordinates.push_back(l1);
-  trackCoordinates.push_back(m1);
-  trackCoordinates.push_back(l2);
-  trackCoordinates.push_back(m2);
+  trackDataFormat track;
+  track.mEtaSlice = etaSlice;
+  track.mAlpha1 = alpha1;
+  track.mBeta1 = beta1;
+  track.mAlpha2 = alpha2;
+  track.mBeta2 = beta2;
+  trackData.push_back(track);
 }
 
-int getTrackEtaSlice(int trackNumber)
+UInt_t getTrackEtaSlice(int trackNumber)
 {
-  return trackCoordinates[trackNumber * trackCoordinateParameters + 0];
+  return trackData[trackNumber].mEtaSlice;
 }
 
-int getTrackM1(int trackNumber)
+Float_t getTrackAlpha1(int trackNumber)
 {
-  return trackCoordinates[trackNumber * trackCoordinateParameters + 1];
+  return trackData[trackNumber].mAlpha1;
 }
 
-int getTrackL1(int trackNumber)
+Float_t getTrackBeta1(int trackNumber)
 {
-  return trackCoordinates[trackNumber * trackCoordinateParameters + 2];
+  return trackData[trackNumber].mBeta1;
 }
 
-int getTrackM2(int trackNumber)
+Float_t getTrackAlpha2(int trackNumber)
 {
-  return trackCoordinates[trackNumber * trackCoordinateParameters + 3];
+  return trackData[trackNumber].mAlpha2;
 }
 
-int getTrackL2(int trackNumber)
+Float_t getTrackBeta2(int trackNumber)
 {
-  return trackCoordinates[trackNumber * trackCoordinateParameters + 4];
+  return trackData[trackNumber].mBeta2;
 }
 
 int getNumberOfTracks()
 {
-  return trackCoordinates.size() / trackCoordinateParameters;
+  return trackData.size();
 }
 
-float getClusterID(int clusterNumber)
+UInt_t getClusterID(int clusterNumber)
 {
-  return clusterCartesianCoordinates[clusterNumber * clusterCartesianParameters + 0];
+  return clusterData[clusterNumber].mID;
 }
 
-float getClusterCartesianX(int clusterNumber)
+Float_t getClusterX(int clusterNumber)
 {
-  return clusterCartesianCoordinates[clusterNumber * clusterCartesianParameters + 1];
+  return clusterData[clusterNumber].mX;
 }
 
-float getClusterCartesianY(int clusterNumber)
+Float_t getClusterY(int clusterNumber)
 {
-  return clusterCartesianCoordinates[clusterNumber * clusterCartesianParameters + 2];
+  return clusterData[clusterNumber].mY;
 }
 
-float getClusterCartesianZ(int clusterNumber)
+Float_t getClusterZ(int clusterNumber)
 {
-  return clusterCartesianCoordinates[clusterNumber * clusterCartesianParameters + 3];
+  return clusterData[clusterNumber].mZ;
 }
 
-void setClusterCartesianParameters(AliHLTUInt32_t clusterID, float x, float y, float z)
+void setClusterCartesianParameters(UInt_t clusterID, float x, float y, float z)
 {
-  clusterCartesianCoordinates.push_back((float)clusterID);
-  clusterCartesianCoordinates.push_back(x);
-  clusterCartesianCoordinates.push_back(y);
-  clusterCartesianCoordinates.push_back(z);
+  clusterDataFormat data;
+  data.mID = clusterID;
+  data.mX = x;
+  data.mY = y;
+  data.mZ = z;
+  clusterData.push_back(data);
 }
 
-float getClusterConformalMappingAlpha(int clusterNumber)
+Float_t getClusterAlpha(int clusterNumber)
 {
-  return clusterConformalMappingCoordinates[clusterNumber * clusterConformalMappingParameters + 1];
+  return clusterData[clusterNumber].mAlpha;
 }
 
-float getClusterConformalMappingBeta(int clusterNumber)
+Float_t getClusterBeta(int clusterNumber)
 {
-  return clusterConformalMappingCoordinates[clusterNumber * clusterConformalMappingParameters + 2];
+  return clusterData[clusterNumber].mBeta;
 }
 
-float getClusterConformalMappingEta(int clusterNumber)
+Float_t getClusterEta(int clusterNumber)
 {
-  return clusterConformalMappingCoordinates[clusterNumber * clusterConformalMappingParameters + 3];
+  return clusterData[clusterNumber].mEta;
 }
 
-int getClusterConformalMappingEtaSlice(int clusterNumber)
+Int_t getClusterEtaSlice(int clusterNumber)
 {
-  return clusterConformalMappingCoordinates[clusterNumber * clusterConformalMappingParameters + 4];
+  return clusterData[clusterNumber].mEtaSlice;
 }
 
-int setClusterConformalMappingAlpha(int clusterNumber, float alpha)
+void setClusterAlpha(int clusterNumber, Float_t alpha)
 {
-  clusterConformalMappingCoordinates[clusterNumber * clusterConformalMappingParameters + 1] = alpha;
+  clusterData[clusterNumber].mAlpha = alpha;
 }
 
-int setClusterConformalMappingBeta(int clusterNumber, float beta)
+void setClusterBeta(int clusterNumber, Float_t beta)
 {
-  clusterConformalMappingCoordinates[clusterNumber * clusterConformalMappingParameters + 2] = beta;
+  clusterData[clusterNumber].mBeta = beta;
 }
 
-int setClusterConformalMappingEta(int clusterNumber, float eta)
+void setClusterEta(int clusterNumber, Float_t eta)
 {
-  clusterConformalMappingCoordinates[clusterNumber * clusterConformalMappingParameters + 3] = eta;
+  clusterData[clusterNumber].mEta = eta;
 }
 
-int setClusterConformalMappingEtaSlice(int clusterNumber, float etaSlice)
+void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice)
 {
-  clusterConformalMappingCoordinates[clusterNumber * clusterConformalMappingParameters + 4] = etaSlice;
+  clusterData[clusterNumber].mEtaSlice = etaSlice;
 }
 
 /// Calculate an approximate value for η. See [1]:p8 for more information. Values below taken from
@@ -199,11 +216,11 @@ int setClusterConformalMappingEtaSlice(int clusterNumber, float etaSlice)
 Double_t calculatePseudoRapidity(int clusterNumber)
 {
 
-  Double_t radial = sqrt(getClusterCartesianX(clusterNumber) * getClusterCartesianX(clusterNumber) +
-                         getClusterCartesianY(clusterNumber) * getClusterCartesianY(clusterNumber) +
-                         getClusterCartesianZ(clusterNumber) * getClusterCartesianZ(clusterNumber));
+  Double_t radial = sqrt(getClusterX(clusterNumber) * getClusterX(clusterNumber) +
+                         getClusterY(clusterNumber) * getClusterY(clusterNumber) +
+                         getClusterZ(clusterNumber) * getClusterZ(clusterNumber));
   Double_t eta =
-    0.5 * log((radial + getClusterCartesianZ(clusterNumber)) / (radial - getClusterCartesianZ(clusterNumber)));
+    0.5 * log((radial + getClusterZ(clusterNumber)) / (radial - getClusterZ(clusterNumber)));
 
   return eta;
 }
@@ -215,11 +232,6 @@ void drawTracks(int totalNumberOfClusters)
 
   cout << "Number of tracks: " << getNumberOfTracks() << endl;
 
-  //DEBUG
-  if (trackCoordinates.size() > 0) {
-    cout << getTrackM1(0) << "," << getTrackL1(0) << " - " << getTrackM2(0) << "," << getTrackL2(0) << endl;
-  }
-
   for (int i = 0; i < getNumberOfTracks(); i++) {
 
     //DEBUG
@@ -228,8 +240,8 @@ void drawTracks(int totalNumberOfClusters)
 
     trackGraph[i] = new TGraph();
 
-    trackGraph[i]->SetPoint(i * 2 + 0, getTrackM1(i), getTrackL1(i));
-    trackGraph[i]->SetPoint(i * 2 + 1, getTrackM2(i), getTrackL2(i));
+    trackGraph[i]->SetPoint(i * 2 + 0, getTrackAlpha1(i), getTrackBeta1(i));
+    trackGraph[i]->SetPoint(i * 2 + 1, getTrackAlpha2(i), getTrackBeta2(i));
 
     if (i == 0) {
       trackGraph[i]->Draw("AC");
@@ -247,8 +259,8 @@ void drawAccumulatorCurves(int totalNumberOfClusters)
   TGraph* g[totalNumberOfClusters];
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    float x = getClusterCartesianX(i);
-    float y = getClusterCartesianY(i);
+    Float_t x = getClusterX(i);
+    Float_t y = getClusterY(i);
 
     g[i] = new TGraph();
 
@@ -294,8 +306,8 @@ void drawCartesianClusters1D(int etaSlice, int totalNumberOfClusters)
   TGraph* cartesianClustersGraph1D = new TGraph();
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    if (getClusterConformalMappingEtaSlice(i) == etaSlice) {
-      cartesianClustersGraph1D->SetPoint(i, getClusterCartesianX(i), getClusterCartesianY(i));
+    if (getClusterEtaSlice(i) == etaSlice) {
+      cartesianClustersGraph1D->SetPoint(i, getClusterX(i), getClusterY(i));
     }
   }
 
@@ -312,8 +324,8 @@ void drawConformalMappingClusters1D(int etaSlice, int totalNumberOfClusters)
   TGraph* gr7 = new TGraph();
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    if (getClusterConformalMappingEtaSlice(i) == etaSlice) {
-      gr7->SetPoint(i, getClusterConformalMappingAlpha(i), getClusterConformalMappingBeta(i));
+    if (getClusterEtaSlice(i) == etaSlice) {
+      gr7->SetPoint(i, getClusterAlpha(i), getClusterBeta(i));
     }
   }
 
@@ -329,9 +341,9 @@ void drawCartesianClusters(int totalNumberOfClusters)
   TGraph2D* cartesianClustersGraph2D = new TGraph2D();
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    // cout << "graph: " << i << " " << getClusterCartesianX(i) << " " << getClusterCartesianY(i) << " " <<
-    // getClusterCartesianZ(i) << " " << endl;
-    cartesianClustersGraph2D->SetPoint(i, getClusterCartesianX(i), getClusterCartesianY(i), getClusterCartesianZ(i));
+    // cout << "graph: " << i << " " << getClusterX(i) << " " << getClusterY(i) << " " <<
+    // getClusterZ(i) << " " << endl;
+    cartesianClustersGraph2D->SetPoint(i, getClusterX(i), getClusterY(i), getClusterZ(i));
   }
 
   // Draw with colored dots
@@ -349,8 +361,8 @@ void drawConformalMappingClusters(int totalNumberOfClusters)
   TGraph2D* conformalMappingClustersGraph2D = new TGraph2D(totalNumberOfClusters);
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    conformalMappingClustersGraph2D->SetPoint(i, getClusterConformalMappingAlpha(i), getClusterConformalMappingBeta(i),
-                                              getClusterConformalMappingEta(i));
+    conformalMappingClustersGraph2D->SetPoint(i, getClusterAlpha(i), getClusterBeta(i),
+                                              getClusterEta(i));
   }
 
   // Draw with colored dots
@@ -382,8 +394,8 @@ int localAccumulatorMaxima(int etaSlice, int r, int theta)
 /// values that exceed a given threshold
 void trackFinding(int etaSlice)
 {
-  // The track will have coordinates (l1,m1), (l2,m2)
-  float l1, m1, l2, m2;
+  // The track will have coordinates (a1,b1), (a2,b2)
+  Float_t a1, b1, a2, b2;
 
   int trackCount = 0;
 
@@ -396,23 +408,23 @@ void trackFinding(int etaSlice)
 
         if (theta >= 45 && theta <= 135) {
           //y = (r - x cos(t)) / sin(t)
-          l1 = 0.0;
-          m1 = (getRValue(rBin) - l1 * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
-          l2 = aMax;
-          m2 = (getRValue(rBin) - l2 * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
+          a1 = 0.0;
+          b1 = (getRValue(rBin) - a1 * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
+          a2 = aMax;
+          b2 = (getRValue(rBin) - a2 * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
         } else {
           //x = (r - y sin(t)) / cos(t);
-          m1 = 0.0;
-          l1 = (getRValue(rBin) - m1 * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
-          m2 = bMax;
-          l2 = (getRValue(rBin) - m2 * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
+          b1 = 0.0;
+          a1 = (getRValue(rBin) - b1 * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
+          b2 = bMax;
+          a2 = (getRValue(rBin) - b2 * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
         }
         //cout << "Found a track at [" << etaSlice << "][" << getRValue(rBin) << "][" << theta << "] with a peak of " << getAccumulatorBin(etaSlice, rBin, theta) << " points"
-        //     << endl << "Track coordinates: " << l1 << "," << m1 << " - " << l2 << "," << m2 << endl;
+        //     << endl << "Track coordinates: " << a1 << "," << b1 << " - " << a2 << "," << b2 << endl;
         //cout << "xMax: " << xMax << " yMax: " << yMax << endl;
         trackCount++;
 
-        setTracks(etaSlice, l1, m1, l2, m2);
+        setTrackParameters(etaSlice, a1, b1, a2, b2);
       }
     }
   }
@@ -425,14 +437,14 @@ void trackFinding(int etaSlice)
 void conformalMapping(int totalNumberOfClusters)
 {
   for (int i = 0; i < totalNumberOfClusters; i++) {
-    float x = getClusterCartesianX(i);
-    float y = getClusterCartesianY(i);
+    Float_t x = getClusterX(i);
+    Float_t y = getClusterY(i);
 
     // Equation (2) from paper [1]
-    float alpha = x / (x * x + y * y);
-    float beta = y / (x * x + y * y);
-    float eta = getClusterConformalMappingEta(i);
-    int etaSlice;
+    Float_t alpha = x / (x * x + y * y);
+    Float_t beta = y / (x * x + y * y);
+    Float_t eta = getClusterEta(i);
+    UInt_t etaSlice;
 
     if (etaMax - etaMin != 0) {
       etaSlice = (etaResolution * (eta - etaMin)) / (etaMax - etaMin);
@@ -443,9 +455,9 @@ void conformalMapping(int totalNumberOfClusters)
     //cout << "i: " << i << " X: " << x << " Y: " << y << " A: " << alpha << " B: " << beta << " η: " << eta << " η slice: " << etaSlice
     //     << endl;
 
-    setClusterConformalMappingAlpha(i, alpha);
-    setClusterConformalMappingBeta(i, beta);
-    setClusterConformalMappingEtaSlice(i, etaSlice);
+    setClusterAlpha(i, alpha);
+    setClusterBeta(i, beta);
+    setClusterEtaSlice(i, etaSlice);
   }
 }
 
@@ -461,8 +473,8 @@ void transformCartesian(int totalNumberOfClusters)
   accumulator.resize(2 * rMax * thetaMax * rResolution, 0);
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    float x = getClusterCartesianX(i);
-    float y = getClusterCartesianY(i);
+    Float_t x = getClusterX(i);
+    Float_t y = getClusterY(i);
 
     for (Int_t theta = 0; theta < thetaMax; theta++) {
       double r = (x * cos(theta * DEG2RAD)) + (y * sin(theta * DEG2RAD));
@@ -493,10 +505,10 @@ void transformConformalMapping(int totalNumberOfClusters)
   cout << "Alternative accumulator size: " << etaResolution * rResolution * thetaMax + rResolution * thetaMax + thetaMax << endl;
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    float a = getClusterConformalMappingAlpha(i);
-    float b = getClusterConformalMappingBeta(i);
-    float eta = getClusterConformalMappingEta(i);
-    int etaSlice = getClusterConformalMappingEtaSlice(i);
+    Float_t a = getClusterAlpha(i);
+    Float_t b = getClusterBeta(i);
+    Float_t eta = getClusterEta(i);
+    UInt_t etaSlice = getClusterEtaSlice(i);
 
     for (Int_t theta = 0; theta < thetaMax; theta++) {
       double r = (a * cos(theta * DEG2RAD)) + (b * sin(theta * DEG2RAD));
@@ -520,10 +532,10 @@ void determineMinMaxEta(int totalNumberOfClusters)
 {
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
 
-    float eta = calculatePseudoRapidity(i);
+    Float_t eta = calculatePseudoRapidity(i);
 
     // Store eta to be later used by the conformalMapping method
-    setClusterConformalMappingEta(i, eta);
+    setClusterEta(i, eta);
 
     // Set initial values to etaMin and etaMax
     if (i == 0) {
@@ -531,8 +543,6 @@ void determineMinMaxEta(int totalNumberOfClusters)
       etaMax = eta;
       continue;
     }
-
-    //cout << "i: " << i << " eta: " << eta << " " << etaMin << " " << etaMax << endl;
 
     if (eta < etaMin) {
       etaMin = eta;
@@ -548,14 +558,14 @@ void determineMinMaxEta(int totalNumberOfClusters)
 void determineMaxCartesianDimensions(int totalNumberOfClusters)
 {
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    if (abs(getClusterCartesianX(i)) > xMax) {
-      xMax = ceil(abs(getClusterCartesianX(i)));
+    if (abs(getClusterX(i)) > xMax) {
+      xMax = ceil(abs(getClusterX(i)));
     }
-    if (abs(getClusterCartesianY(i)) > yMax) {
-      yMax = ceil(abs(getClusterCartesianY(i)));
+    if (abs(getClusterY(i)) > yMax) {
+      yMax = ceil(abs(getClusterY(i)));
     }
-    if (abs(getClusterCartesianZ(i)) > zMax) {
-      zMax = ceil(abs(getClusterCartesianZ(i)));
+    if (abs(getClusterZ(i)) > zMax) {
+      zMax = ceil(abs(getClusterZ(i)));
     }
   }
   cout << "xMax: " << xMax << " yMax: " << yMax << " zMax: " << zMax << endl;
@@ -567,23 +577,23 @@ void determineMinMaxAB(int totalNumberOfClusters)
 {
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     if (i == 0) {
-      aMin = floor(getClusterConformalMappingAlpha(i));
-      aMax = ceil(abs(getClusterConformalMappingAlpha(i)));
-      bMin = floor(getClusterConformalMappingBeta(i));
-      bMax = ceil(abs(getClusterConformalMappingBeta(i)));
+      aMin = floor(getClusterAlpha(i));
+      aMax = ceil(abs(getClusterAlpha(i)));
+      bMin = floor(getClusterBeta(i));
+      bMax = ceil(abs(getClusterBeta(i)));
       continue;
     }
-    if ( getClusterConformalMappingAlpha(i) < aMin ) {
-      aMin = floor(getClusterConformalMappingAlpha(i));
+    if ( getClusterAlpha(i) < aMin ) {
+      aMin = floor(getClusterAlpha(i));
     }
-    else if (abs(getClusterConformalMappingAlpha(i)) > aMax) {
-      aMax = ceil(abs(getClusterConformalMappingAlpha(i)));
+    else if (abs(getClusterAlpha(i)) > aMax) {
+      aMax = ceil(abs(getClusterAlpha(i)));
     }
 
-    if ( getClusterConformalMappingBeta(i) < bMin ) {
-      bMin = floor(getClusterConformalMappingBeta(i));
-    } else if (abs(getClusterConformalMappingBeta(i)) > bMax) {
-      bMax = ceil(abs(getClusterConformalMappingBeta(i)));
+    if ( getClusterBeta(i) < bMin ) {
+      bMin = floor(getClusterBeta(i));
+    } else if (abs(getClusterBeta(i)) > bMax) {
+      bMax = ceil(abs(getClusterBeta(i)));
     }
   }
   cout << "aMax: " << aMax << " bMax: " << bMax << endl;
@@ -595,8 +605,8 @@ void printData(int totalNumberOfClusters)
        << endl;
 
   for (int i = 0; i < totalNumberOfClusters; i++) {
-    cout << (AliHLTUInt32_t)getClusterID(i) << setw(13) << getClusterCartesianX(i) << setw(13)
-         << getClusterCartesianY(i) << setw(13) << getClusterCartesianZ(i) << endl;
+    cout << (AliHLTUInt32_t)getClusterID(i) << setw(13) << getClusterX(i) << setw(13)
+         << getClusterY(i) << setw(13) << getClusterZ(i) << endl;
   }
 }
 
@@ -707,7 +717,12 @@ int main(int argc, char** argv)
       exit(1);
     }
 
-    cout << "Added " << totalNumberOfClusters << " clusters from " << totalNumberOfDataFiles << " data files" << endl;
+    cout << "Added " << totalNumberOfClusters << " clusters from " << totalNumberOfDataFiles << " data files. Cluster vector size: " << clusterData.size() << endl;
+
+    if (totalNumberOfClusters != clusterData.size()) {
+      std::cerr << "The cluster vector size does not match the reported number of clusters" << endl;
+      exit(1);
+    }
 
   // DEBUG
 /*  totalNumberOfClusters = 100;
@@ -723,7 +738,7 @@ int main(int argc, char** argv)
     setClusterCartesianParameters(kk, 10, 19.0 + kk - 11, 1);
   }
 */
-  totalNumberOfClusters = 20000;
+/*  totalNumberOfClusters = 20000;
   // printData(totalNumberOfClusters);
 
   // Allocate space for the conformal mapping parameter vector
@@ -750,9 +765,9 @@ int main(int argc, char** argv)
   transformConformalMapping(totalNumberOfClusters);
 
   // Locate tracks for each η slice
-/*  for (int etaSlice = 0; etaSlice <= etaResolution; etaSlice++) {
-    trackFinding(etaSlice);
-  }*/
+  //for (int etaSlice = 0; etaSlice <= etaResolution; etaSlice++) {
+  //  trackFinding(etaSlice);
+  }
   trackFinding(15);
 
   //drawAccumulatorHistogram();
@@ -771,22 +786,18 @@ int main(int argc, char** argv)
 
 
   for ( i = 0; i < totalNumberOfClusters; i++) {
-    array[getClusterConformalMappingEtaSlice(i)]++;
+    array[getClusterEtaSlice(i)]++;
   }
 
   for ( i = 0; i <= etaResolution; i++) {
     cout << i << " " << array[i] << endl;
   }
 
-/*
   for (int theta = 0; theta < thetaMax; theta++) {
     for (int rBin = 0; rBin < rResolution; rBin++) {
-      if ( getAccumulatorBin(15, rBin, theta ) > 0 ) {
-        cout << theta << " " << rBin << " " << getAccumulatorBin(15, rBin, theta ) << endl;
-      }
+      cout << theta << " " << rBin << " " << getAccumulatorBin(15, rBin, theta ) << endl;
     }
   }
-*/
 
   return 0;
 
@@ -795,6 +806,6 @@ int main(int argc, char** argv)
 
   // Draw the accumulator data as curves
   drawAccumulatorCurves(totalNumberOfClusters);
-
+*/
   return 0;
 }
