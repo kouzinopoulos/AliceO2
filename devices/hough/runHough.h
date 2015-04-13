@@ -101,6 +101,18 @@ int getRBinValue(float r)
   return ((r - rMin) * rResolution) / (rMax - rMin);
 }
 
+UInt_t getTrackEtaSlice(int trackNumber) { return trackData[trackNumber].mEtaSlice; }
+
+Float_t getTrackAlpha1(int trackNumber) { return trackData[trackNumber].mAlpha1; }
+
+Float_t getTrackBeta1(int trackNumber) { return trackData[trackNumber].mBeta1; }
+
+Float_t getTrackAlpha2(int trackNumber) { return trackData[trackNumber].mAlpha2; }
+
+Float_t getTrackBeta2(int trackNumber) { return trackData[trackNumber].mBeta2; }
+
+UInt_t getNumberOfTracks() { return trackData.size(); }
+
 void setTrackParameters(UInt_t etaSlice, Float_t alpha1, Float_t beta1, Float_t alpha2, Float_t beta2)
 {
   trackDataFormat track;
@@ -112,18 +124,6 @@ void setTrackParameters(UInt_t etaSlice, Float_t alpha1, Float_t beta1, Float_t 
   trackData.push_back(track);
 }
 
-UInt_t getTrackEtaSlice(int trackNumber) { return trackData[trackNumber].mEtaSlice; }
-
-Float_t getTrackAlpha1(int trackNumber) { return trackData[trackNumber].mAlpha1; }
-
-Float_t getTrackBeta1(int trackNumber) { return trackData[trackNumber].mBeta1; }
-
-Float_t getTrackAlpha2(int trackNumber) { return trackData[trackNumber].mAlpha2; }
-
-Float_t getTrackBeta2(int trackNumber) { return trackData[trackNumber].mBeta2; }
-
-int getNumberOfTracks() { return trackData.size(); }
-
 UInt_t getClusterID(int clusterNumber) { return clusterData[clusterNumber].mID; }
 
 Float_t getClusterX(int clusterNumber) { return clusterData[clusterNumber].mX; }
@@ -133,17 +133,6 @@ Float_t getClusterY(int clusterNumber) { return clusterData[clusterNumber].mY; }
 Float_t getClusterZ(int clusterNumber) { return clusterData[clusterNumber].mZ; }
 
 UInt_t getClusterCharge(int clusterNumber) { return clusterData[clusterNumber].mCharge; }
-
-void setClusterParameters(UInt_t clusterID, Float_t x, Float_t y, Float_t z, UInt_t charge)
-{
-  clusterDataFormat data;
-  data.mID = clusterID;
-  data.mX = x;
-  data.mY = y;
-  data.mZ = z;
-  data.mCharge = charge;
-  clusterData.push_back(data);
-}
 
 Float_t getClusterAlpha(int clusterNumber) { return clusterData[clusterNumber].mAlpha; }
 
@@ -160,3 +149,14 @@ void setClusterBeta(int clusterNumber, Float_t beta) { clusterData[clusterNumber
 void setClusterEta(int clusterNumber, Float_t eta) { clusterData[clusterNumber].mEta = eta; }
 
 void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice) { clusterData[clusterNumber].mEtaSlice = etaSlice; }
+
+void setClusterParameters(UInt_t clusterID, Float_t x, Float_t y, Float_t z, UInt_t charge)
+{
+  clusterDataFormat data;
+  data.mID = clusterID;
+  data.mX = x;
+  data.mY = y;
+  data.mZ = z;
+  data.mCharge = charge;
+  clusterData.push_back(data);
+}
