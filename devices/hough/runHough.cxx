@@ -161,13 +161,19 @@ Float_t getClusterZ(int clusterNumber)
   return clusterData[clusterNumber].mZ;
 }
 
-void setClusterCartesianParameters(UInt_t clusterID, float x, float y, float z)
+UInt_t getClusterCharge(int clusterNumber)
+{
+  return clusterData[clusterNumber].mCharge;
+}
+
+void setClusterParameters(UInt_t clusterID, Float_t x, Float_t y, Float_t z, UInt_t charge)
 {
   clusterDataFormat data;
   data.mID = clusterID;
   data.mX = x;
   data.mY = y;
   data.mZ = z;
+  data.mCharge = charge;
   clusterData.push_back(data);
 }
 
@@ -668,8 +674,8 @@ int processData(std::string dataPath, std::string dataType, std::string dataOrig
   for (vector<AliHLTUInt32_t>::const_iterator element = clusterIDs.begin(); element != clusterIDs.end(); element++) {
     AliHLTUInt32_t clusterID = *element;
 
-    setClusterCartesianParameters(clusterID, spacepoints->GetX(clusterID), spacepoints->GetY(clusterID),
-                                  spacepoints->GetZ(clusterID));
+    setClusterParameters(clusterID, spacepoints->GetX(clusterID), spacepoints->GetY(clusterID),
+                                  spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID));
   }
 
   // De-allocate memory space
@@ -727,15 +733,15 @@ int main(int argc, char** argv)
   // DEBUG
 /*  totalNumberOfClusters = 100;
   for (int kk = 0; kk < 6; kk++) {
-    setClusterCartesianParameters(kk, (float)9.0 + kk, (float)17.0, 1);
+    setClusterParameters(kk, (float)9.0 + kk, (float)17.0, 1);
   }
 
   for (int kk = 6; kk < 11; kk++) {
-    setClusterCartesianParameters(kk, 9.0 + kk - 5, 17.0 + kk - 5, 1);
+    setClusterParameters(kk, 9.0 + kk - 5, 17.0 + kk - 5, 1);
   }
 
   for (int kk = 11; kk < 150; kk++) {
-    setClusterCartesianParameters(kk, 10, 19.0 + kk - 11, 1);
+    setClusterParameters(kk, 10, 19.0 + kk - 11, 1);
   }
 */
 /*  totalNumberOfClusters = 20000;
