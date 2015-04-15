@@ -22,6 +22,9 @@ struct clusterDataFormat {
   UInt_t mID;
   UInt_t mCharge;
 
+  UInt_t mTPCSlice;
+  UInt_t mTPCPartition;
+
   Float_t mX;
   Float_t mY;
   Float_t mZ;
@@ -125,6 +128,8 @@ void setTrackParameters(UInt_t etaSlice, Float_t alpha1, Float_t beta1, Float_t 
 }
 
 UInt_t getClusterID(int clusterNumber) { return clusterData[clusterNumber].mID; }
+UInt_t getClusterSlice(int clusterNumber) { return clusterData[clusterNumber].mTPCSlice; }
+UInt_t getClusterPartition(int clusterNumber) { return clusterData[clusterNumber].mTPCPartition; }
 
 Float_t getClusterX(int clusterNumber) { return clusterData[clusterNumber].mX; }
 
@@ -150,7 +155,7 @@ void setClusterEta(int clusterNumber, Float_t eta) { clusterData[clusterNumber].
 
 void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice) { clusterData[clusterNumber].mEtaSlice = etaSlice; }
 
-void setClusterParameters(UInt_t clusterID, Float_t x, Float_t y, Float_t z, UInt_t charge)
+void setClusterParameters(UInt_t clusterID, Float_t x, Float_t y, Float_t z, UInt_t charge, UInt_t tpcSlice, UInt_t tpcPartition)
 {
   clusterDataFormat data;
   data.mID = clusterID;
@@ -158,5 +163,7 @@ void setClusterParameters(UInt_t clusterID, Float_t x, Float_t y, Float_t z, UIn
   data.mY = y;
   data.mZ = z;
   data.mCharge = charge;
+  data.mTPCSlice = tpcSlice;
+  data.mTPCPartition = tpcPartition;
   clusterData.push_back(data);
 }

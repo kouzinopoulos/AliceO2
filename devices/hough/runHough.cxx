@@ -95,26 +95,29 @@ void drawCartesianClusters1D(int etaSlice, int totalNumberOfClusters)
 
   cartesianClustersGraph1D->SetMarkerStyle(7);
   cartesianClustersGraph1D->Draw("AP");
-  // cartesianClustersGraph1D->GetXaxis()->SetRangeUser(70,250);
+  cartesianClustersGraph1D->GetXaxis()->SetRangeUser(80, 240);
+  cartesianClustersGraph1D->GetXaxis()->SetTitle("Pad Row");
 
   cartesianClustersCanvas1D->Print("cartesianClusters1D.pdf");
 }
 
 void drawConformalMappingClusters1D(int etaSlice, int totalNumberOfClusters)
 {
-  TCanvas* c7 = new TCanvas("c1", "Conformal mapping clusters", 0, 0, 800, 600);
-  TGraph* gr7 = new TGraph();
+  TCanvas* conformalMappingClustersCanvas1D =
+    new TCanvas("conformalMappingClustersCanvas1D", "Conformal mapping clusters", 0, 0, 800, 600);
+  TGraph* conformalMappingClustersGraph1D = new TGraph();
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     if (getClusterEtaSlice(i) == etaSlice) {
-      gr7->SetPoint(i, getClusterAlpha(i), getClusterBeta(i));
+      conformalMappingClustersGraph1D->SetPoint(i, getClusterAlpha(i), getClusterBeta(i));
     }
   }
 
-  gr7->SetMarkerStyle(7);
-  gr7->Draw("AP");
+  conformalMappingClustersGraph1D->SetMarkerStyle(7);
+  conformalMappingClustersGraph1D->Draw("AP");
+  conformalMappingClustersGraph1D->GetXaxis()->SetRangeUser(0.004, 0.012);
 
-  c7->Print("conformalMappingClusters1D.pdf");
+  conformalMappingClustersCanvas1D->Print("conformalMappingClusters1D.pdf");
 }
 
 void drawCartesianClusters(int totalNumberOfClusters)
@@ -241,9 +244,9 @@ void calculateEtaSlice(int totalNumberOfClusters)
       exit(1);
     }
 
-    UInt_t etaSlice = (etaResolution * (eta - etaMin)) / (etaMax - etaMin);
+    Double_t etaSlice = (etaResolution * (eta - etaMin)) / (etaMax - etaMin);
 
-    setClusterEtaSlice(i, etaSlice);
+    setClusterEtaSlice(i, (Int_t)etaSlice);
   }
 }
 
@@ -472,7 +475,7 @@ int processData(std::string dataPath, std::string dataType, std::string dataOrig
     AliHLTUInt32_t clusterID = *element;
 
     setClusterParameters(clusterID, spacepoints->GetX(clusterID), spacepoints->GetY(clusterID),
-                         spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID));
+                         spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID), currentSlice, currentPartition);
   }
 
   // De-allocate memory space
@@ -533,6 +536,8 @@ int main(int argc, char** argv)
   determineMinMaxEta(totalNumberOfClusters);
   calculateEtaSlice(totalNumberOfClusters);
   drawCartesianClusters1D(15, totalNumberOfClusters);
+  conformalMapping(totalNumberOfClusters);
+  drawConformalMappingClusters1D(15, totalNumberOfClusters);
 
   // DEBUG
   /*  totalNumberOfClusters = 100;
