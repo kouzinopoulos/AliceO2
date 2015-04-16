@@ -305,8 +305,7 @@ void transformConformalMapping(int totalNumberOfClusters)
 
   // cout << "rMin: " << -rMax << " rMax: " << rMax << endl;
 
-  // The lines will have -rMax <= r <= rMax and 0 <= theta <= thetaMax. The total space needed is thus 2 * rMax *
-  // thetaMax
+  // Reserve space for the accumulator bins
   accumulator.resize(etaResolution * rResolution * thetaMax + rResolution * thetaMax + thetaMax, 0);
 
   cout << "Accumulator size: " << 2 * rMax* thetaMax* rResolution* etaResolution << endl;
@@ -332,6 +331,17 @@ void transformConformalMapping(int totalNumberOfClusters)
       // Use a discreet value for r by rounding r. Then, rMax is added to r to change its range from -rMax <= r <= rMax
       // to 0 <= r <= 2 * rMax
       setAccumulatorBin(etaSlice, rBin, theta);
+    }
+  }
+}
+
+void houghTransform(int totalNumberOfClusters)
+{
+  // Iterate through all the pad rows for each slice of a TPC partition/patch
+  for (UInt_t partition = 0; partition < 6; partition++) {
+    for (UInt_t slice = 0; slice < 36; slice++) {
+      for (UChar_t row = getFirstPadRow(partition); row <= getLastPadRow(partition); row++) {
+      }
     }
   }
 }
@@ -475,7 +485,8 @@ int processData(std::string dataPath, std::string dataType, std::string dataOrig
     AliHLTUInt32_t clusterID = *element;
 
     setClusterParameters(clusterID, spacepoints->GetX(clusterID), spacepoints->GetY(clusterID),
-                         spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID), currentSlice, currentPartition);
+                         spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID), currentSlice,
+                         currentPartition);
   }
 
   // De-allocate memory space
