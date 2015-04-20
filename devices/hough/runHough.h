@@ -15,7 +15,7 @@
 
 #include "boost/filesystem.hpp"
 
-#include <sstream>
+#include "Accumulator.h"
 
 // FIXME: convert float into double for bigger precision
 // Information for each stored cluster
@@ -29,30 +29,45 @@ struct clusterDataFormat {
   UInt_t mTPCSlice;
   UInt_t mTPCPartition;
 
-  Float_t mX;
-  Float_t mY;
-  Float_t mZ;
+  Double_t mX;
+  Double_t mY;
+  Double_t mZ;
 
-  Float_t mAlpha;
-  Float_t mBeta;
-  Float_t mEta;
+  Double_t mAlpha;
+  Double_t mBeta;
+  Double_t mEta;
 
   UInt_t mEtaSlice;
 };
 
 // Information for each reconstructed track
 struct trackDataFormat {
-  Float_t mAlpha1;
-  Float_t mBeta1;
-  Float_t mAlpha2;
-  Float_t mBeta2;
+  Double_t mAlpha1;
+  Double_t mBeta1;
+  Double_t mAlpha2;
+  Double_t mBeta2;
 
   UInt_t mEtaSlice;
 };
 
 struct accumulatorDataFormat {
-  // UShort_t bin[rResolution * thetaMax + thetaMax];
+  // UShort_t bin[rResolution * thetalphaMax + thetalphaMax];
   UShort_t* bin;
+};
+
+struct etaRow {
+  UChar_t fStartPad; // First pad in the cluster
+  UChar_t fEndPad; // Last pad in the cluster
+  Bool_t fIsFound; // Is the cluster already found
+};
+
+// Parameters which represent a given pad in the hough space. Used in order to avoid as much as possible floating point
+// operations during the hough transform
+struct houghPadParameters {
+  Float_t fAlpha;      // Starting value for the hough parameter alpha1
+  Float_t fDeltaAlpha; // Slope of alpha1
+  Int_t fFirstBin;     // First alpha2 bin to be filled
+  Int_t fLastBin;      // Last alpha2 bin to be filled
 };
 
 std::unique_ptr<AliHLTTPCSpacePointContainer> spacepoints;
@@ -66,32 +81,56 @@ std::vector<unsigned int> accumulator;
 Int_t numberOfPartitions = 6;
 Int_t padRowIndex[6][2] = { { 0, 29 }, { 30, 62 }, { 63, 90 }, { 91, 116 }, { 117, 139 }, { 140, 158 } };
 Int_t numberOfPadRows[6] = { 30, 33, 28, 26, 23, 19 };
+Int_t numberOfRows = 159;
 
-int xMax = 0;
-int yMax = 0;
-int zMax = 0;
-int aMin = 0;
-int aMax = 0;
-int bMin = 0;
-int bMax = 0;
+Int_t numberOfPads[159] = {
+  67,  67,  69,  69,  69,  71,  71,  71,  73,  73,  73,  75,  75,  75,  77,  77,  77,  79,  79,  79,  81,  81,  81,
+  83,  83,  83,  85,  85,  85,  87,  87,  87,  89,  89,  89,  91,  91,  91,  93,  93,  93,  95,  95,  95,  97,  97,
+  97,  99,  99,  99,  99,  101, 101, 101, 103, 103, 103, 105, 105, 105, 107, 107, 107, 73,  75,  75,  75,  75,  77,
+  77,  77,  79,  79,  79,  81,  81,  81,  81,  83,  83,  83,  85,  85,  85,  85,  87,  87,  87,  89,  89,  89,  91,
+  91,  91,  91,  93,  93,  93,  95,  95,  95,  95,  97,  97,  97,  99,  99,  99,  101, 101, 101, 101, 103, 103, 103,
+  105, 105, 105, 105, 107, 107, 107, 109, 109, 109, 111, 111, 111, 113, 113, 113, 115, 115, 117, 117, 119, 119, 121,
+  121, 121, 123, 123, 125, 125, 127, 127, 127, 129, 129, 131, 131, 133, 133, 135, 135, 135, 137, 137, 139
+};
 
-float etaMin;
-float etaMax;
+Double_t xMin;
+Double_t xMax;
+Double_t yMin;
+Double_t yMax;
+
+
+Double_t alphaMin;
+Double_t alphaMax;
+Double_t betaMin;
+Double_t betaMax;
+
+float etalphaMin;
+float etalphaMax;
 
 int rMax;
-int thetaMax;
+int thetalphaMax;
 
-// project parameters
+// Project parameters
 int houghThreshold = 53;
 int etaResolution = 20;
+int thetaResolution = 180;
 
-// By setting rResolution = 1, r = 18.6 and r = 19.2 for theta = 48 will both
-// cause bin(19,48) to increase. With a
-// resoution of rResolution = 10, they will cause bin(186,48) and bin(192,48) to
-// increase respectively.
-// Now rResolution = 100 means that there will be 100 bins for r: 0 - 99.
-// Converting r -> rBin and rBin -> r is done by
-// methods getRValue and getRBinValue
+// Hough transform parameters
+UChar_t** fGapCount;
+UChar_t** fCurrentRowCount;
+UChar_t** fPreviousBin;
+UChar_t** fNextBin;
+UChar_t** fNextRow;
+
+UChar_t* fTrackLastRow;
+
+houghPadParameters** fStartPadParameters;
+houghPadParameters** fEndPadParameters;
+
+// By setting rResolution = 1, r = 18.6 and r = 19.2 for theta = 48 will both cause bin(19,48) to increase. With a
+// resoution of rResolution = 10, they will cause bin(186,48) and bin(192,48) to increase respectively. Now rResolution
+// = 100 means that there will be 100 bins for r: 0 - 99. Converting r -> rBin and rBin -> r is done by methods
+// getRValue and getRBinValue
 int rResolution = 100000;
 
 // sin and cos expect values in radians instead of degrees
@@ -101,12 +140,12 @@ int rResolution = 100000;
 // Create instead a vector fParamSpace of histograms for each etaIndex (AliHLTHoughTransformRow::GetHistogram)
 void setAccumulatorBin(int etaSlice, int r, int theta)
 {
-  accumulator[etaSlice * (rResolution * thetaMax) + r * thetaMax + theta]++;
+  accumulator[etaSlice * (rResolution * thetalphaMax) + r * thetalphaMax + theta]++;
 }
 
 int getAccumulatorBin(int etaSlice, int r, int theta)
 {
-  return accumulator[etaSlice * (rResolution * thetaMax) + r * thetaMax + theta];
+  return accumulator[etaSlice * (rResolution * thetalphaMax) + r * thetalphaMax + theta];
 }
 
 // Solve getRBinValue to r
@@ -173,15 +212,15 @@ UInt_t getClusterPartition(int clusterNumber)
   return clusterData[clusterNumber].mTPCPartition;
 }
 
-Float_t getClusterX(int clusterNumber)
+Double_t getClusterX(int clusterNumber)
 {
   return clusterData[clusterNumber].mX;
 }
-Float_t getClusterY(int clusterNumber)
+Double_t getClusterY(int clusterNumber)
 {
   return clusterData[clusterNumber].mY;
 }
-Float_t getClusterZ(int clusterNumber)
+Double_t getClusterZ(int clusterNumber)
 {
   return clusterData[clusterNumber].mZ;
 }
@@ -191,15 +230,15 @@ UInt_t getClusterCharge(int clusterNumber)
   return clusterData[clusterNumber].mCharge;
 }
 
-Float_t getClusterAlpha(int clusterNumber)
+Double_t getClusterAlpha(int clusterNumber)
 {
   return clusterData[clusterNumber].mAlpha;
 }
-Float_t getClusterBeta(int clusterNumber)
+Double_t getClusterBeta(int clusterNumber)
 {
   return clusterData[clusterNumber].mBeta;
 }
-Float_t getClusterEta(int clusterNumber)
+Double_t getClusterEta(int clusterNumber)
 {
   return clusterData[clusterNumber].mEta;
 }
@@ -208,15 +247,15 @@ Int_t getClusterEtaSlice(int clusterNumber)
   return clusterData[clusterNumber].mEtaSlice;
 }
 
-void setClusterAlpha(int clusterNumber, Float_t alpha)
+void setClusterAlpha(int clusterNumber, Double_t alpha)
 {
   clusterData[clusterNumber].mAlpha = alpha;
 }
-void setClusterBeta(int clusterNumber, Float_t beta)
+void setClusterBeta(int clusterNumber, Double_t beta)
 {
   clusterData[clusterNumber].mBeta = beta;
 }
-void setClusterEta(int clusterNumber, Float_t eta)
+void setClusterEta(int clusterNumber, Double_t eta)
 {
   clusterData[clusterNumber].mEta = eta;
 }
@@ -225,7 +264,7 @@ void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice)
   clusterData[clusterNumber].mEtaSlice = etaSlice;
 }
 
-void setClusterParameters(UInt_t clusterID, Float_t x, Float_t y, Float_t z, UInt_t charge, UInt_t tpcSlice,
+void setClusterParameters(UInt_t clusterID, Double_t x, Double_t y, Double_t z, UInt_t charge, UInt_t tpcSlice,
                           UInt_t tpcPartition)
 {
   clusterDataFormat data;
@@ -264,3 +303,25 @@ Int_t getLastPadRow(Int_t partition)
     return padRowIndex[partition][1];
   }
 }
+
+// Returns the number of pads per row
+Int_t getNumberOfPads(Int_t row)
+{
+  if (row < 0 || row >= numberOfRows) {
+    std::cerr << "Wrong row " << row << endl;
+    return 0;
+  }
+  return numberOfPads[row];
+}
+
+/// Returns the corresponding histogram bin
+/*Int_t getHistogramBin(Int_t xbin,Int_t ybin) const
+{
+  if(xbin < fFirstXbin || xbin > fLastXbin)
+    return 0;
+  if(ybin < fFirstYbin || ybin > fLastYbin)
+    return 0;
+
+  return xbin + ybin*(fNxbins+2);
+}
+*/

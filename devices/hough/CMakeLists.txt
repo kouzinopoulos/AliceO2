@@ -18,8 +18,13 @@ set(LINK_DIRECTORIES
 link_directories(${LINK_DIRECTORIES})
 
 set(SRCS
-  runHough.cxx
+  Accumulator.cxx
 )
+
+set(LIBRARY_NAME ALICEHOUGH)
+
+#GENERATE_LIBRARY()
+
 
 Set(Exe_Names
   runHough
