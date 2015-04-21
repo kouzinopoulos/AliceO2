@@ -8,6 +8,10 @@
 
 #include "runHough.h"
 
+// fgBeta1 and fgBeta2 are two curves which define the Hough space
+Float_t fgBeta1 = 1.0 / Row2X(84);
+Float_t fgBeta2 = 1.0 / (Row2X(158) * (1.0 + tan(Pi() * 10 / 180) * tan(Pi() * 10 / 180)));
+
 void drawTracks(int totalNumberOfClusters)
 {
   TCanvas* trackCanvas = new TCanvas("trackCanvas", "Reconstructed tracks", 0, 0, 800, 600);
@@ -309,8 +313,8 @@ void transformConformalMapping(int totalNumberOfClusters)
   accumulator.resize(etaResolution * rResolution * thetalphaMax + rResolution * thetalphaMax + thetalphaMax, 0);
 
   cout << "Accumulator size: " << 2 * rMax* thetalphaMax* rResolution* etaResolution << endl;
-  cout << "Alternative accumulator size: " << etaResolution* rResolution* thetalphaMax + rResolution* thetalphaMax + thetalphaMax
-       << endl;
+  cout << "Alternative accumulator size: "
+       << etaResolution* rResolution* thetalphaMax + rResolution* thetalphaMax + thetalphaMax << endl;
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     Float_t a = getClusterAlpha(i);
@@ -335,7 +339,7 @@ void transformConformalMapping(int totalNumberOfClusters)
   }
 }
 
-void fillCluster(UChar_t row, Int_t etaSlice)
+void fillCluster(AliceO2::Hough::Accumulator* hist, UChar_t row, Int_t etaSlice)
 {
   UChar_t* numberOfGaps = fGapCount[etaSlice];
   UChar_t* currentRow = fCurrentRowCount[etaSlice];
@@ -344,31 +348,78 @@ void fillCluster(UChar_t row, Int_t etaSlice)
   UChar_t* nextBin = fNextBin[etaSlice];
   UChar_t* nextRow = fNextRow[etaSlice];
 
+  Float_t beta1 = fgBeta1;
+  Float_t beta2 = fgBeta2;
+  Float_t beta1minusbeta2 = fgBeta1 - fgBeta2;
+  Float_t ymin = hist->GetYmin();
+  Float_t histbin = hist->GetBinWidthY();
+  Float_t xmin = hist->GetXmin();
+  Float_t xmax = hist->GetXmax();
+  Float_t xbin = (xmax - xmin) / hist->GetNbinsX();
+  Int_t firstbinx = hist->GetFirstXbin();
+  Int_t lastbinx = hist->GetLastXbin();
+  Int_t nbinx = hist->GetNbinsX() + 2;
+  Int_t firstbin = hist->GetFirstYbin();
+  Int_t lastbin = hist->GetLastYbin();
+
+  Int_t nPads = getNumberOfPads(row);
+  Int_t iPatch = getPatch(row);
+  Double_t padPitch = getPadPitchWidth(iPatch);
+  Float_t x = Row2X(row);
+  Float_t x2 = x * x;
+
+  for (Int_t pad = 0; pad < nPads; pad++) {
+    Float_t y = (pad - 0.5 * (nPads - 1)) * padPitch;
+    Float_t starty = (pad - 0.5 * nPads) * padPitch;
+    Float_t r1 = x2 + starty * starty;
+    Float_t xoverr1 = x / r1;
+    Float_t startyoverr1 = starty / r1;
+    Float_t endy = (pad - 0.5 * (nPads - 2)) * padPitch;
+    Float_t r2 = x2 + endy * endy;
+    Float_t xoverr2 = x / r2;
+    Float_t endyoverr2 = endy / r2;
+    Float_t a1 = beta1minusbeta2 / (xoverr1 - beta2);
+    Float_t b1 = (xoverr1 - beta1) / (xoverr1 - beta2);
+    Float_t a2 = beta1minusbeta2 / (xoverr2 - beta2);
+    Float_t b2 = (xoverr2 - beta1) / (xoverr2 - beta2);
+
+    Float_t alpha1 = (a1 * startyoverr1 + b1 * ymin - xmin) / xbin;
+    Float_t deltaalpha1 = b1 * histbin / xbin;
+    if (b1 < 0)
+      alpha1 += deltaalpha1;
+    Float_t alpha2 = (a2 * endyoverr2 + b2 * ymin - xmin) / xbin;
+    Float_t deltaalpha2 = b2 * histbin / xbin;
+    if (b2 >= 0)
+      alpha2 += deltaalpha2;
+  }
+
   // For a given row and the starting pad of the clusters in a specific eta slice (??) do the transformation (??)
 }
 
 void houghTransform(int totalNumberOfClusters)
 {
-  // Code ported from AliHLTHoughTransformerRow::CreateHistograms
-  // Create one accumulatore per eta slice
-  AliceO2::Hough::Accumulator** fParamSpace = new AliceO2::Hough::Accumulator* [etaResolution];
+  // Allocate space for the accumulator
+  parameterSpace = new AliceO2::Hough::Accumulator* [etaResolution];
 
   Int_t numberOfAccumulatorBinsX = 100;
   Int_t numberOfAccumulatorBinsY = 100;
 
+cout << parameterSpace[0]->GetFirstXbin() << endl;
+
+/*
   Char_t histname[256];
   for (Int_t i = 0; i < etaResolution; i++) {
     sprintf(histname, "paramspace_%d", i);
-    //fParamSpace[i] = new AliceO2::Hough::Accumulator(histname, "", numberOfAccumulatorBinsX, xMin, xMax, numberOfAccumulatorBinsY, yMin, yMax);
+     parameterSpace[i] = new AliceO2::Hough::Accumulator(histname, "", numberOfAccumulatorBinsX, xMin, xMax,
+     numberOfAccumulatorBinsY, yMin, yMax);
   }
+*/
+  AliceO2::Hough::Accumulator* test = new AliceO2::Hough::Accumulator("", "", 1, 2.0, 2.0, 1, 2.0, 2.0);
 
-
-
-
-
-
-  // Int_t ncells = (hist->GetNbinsX()+2)*(hist->GetNbinsY()+2);
-  Int_t ncells = rResolution * thetaResolution;
+  AliceO2::Hough::Accumulator* hist = parameterSpace[0];
+  Int_t ncellsx = (hist->GetNbinsX() + 3) / 2;
+  Int_t ncellsy = (hist->GetNbinsY() + 3) / 2;
+  Int_t ncells = ncellsx * ncellsy;
 
   if (!fGapCount) {
     fGapCount = new UChar_t* [etaResolution];
@@ -382,7 +433,7 @@ void houghTransform(int totalNumberOfClusters)
     for (UInt_t slice = 0; slice < 36; slice++) {
       for (UChar_t row = getFirstPadRow(partition); row <= getLastPadRow(partition); row++) {
         for (UInt_t etaSlice = 0; etaSlice < etaResolution; etaSlice++) {
-          fillCluster(row, etaSlice);
+          fillCluster(hist, row, etaSlice);
         }
       }
     }
@@ -464,7 +515,8 @@ void determineMinMaxAlphaBeta(int totalNumberOfClusters)
       betaMax = getClusterBeta(i);
     }
   }
-  cout << "alphaMin: " << alphaMin << " alphaMax: " << alphaMax << " betaMin: " << betaMin << " betaMax: " << betaMax << endl;
+  cout << "alphaMin: " << alphaMin << " alphaMax: " << alphaMax << " betaMin: " << betaMin << " betaMax: " << betaMax
+       << endl;
 }
 
 void printData(int totalNumberOfClusters)
