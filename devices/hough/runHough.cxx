@@ -404,17 +404,10 @@ void houghTransform(int totalNumberOfClusters)
   Int_t numberOfAccumulatorBinsX = 100;
   Int_t numberOfAccumulatorBinsY = 100;
 
-cout << parameterSpace[0]->GetFirstXbin() << endl;
-
-/*
-  Char_t histname[256];
   for (Int_t i = 0; i < etaResolution; i++) {
-    sprintf(histname, "paramspace_%d", i);
-     parameterSpace[i] = new AliceO2::Hough::Accumulator(histname, "", numberOfAccumulatorBinsX, xMin, xMax,
-     numberOfAccumulatorBinsY, yMin, yMax);
+    parameterSpace[i] =
+      new AliceO2::Hough::Accumulator(numberOfAccumulatorBinsX, xMin, xMax, numberOfAccumulatorBinsY, yMin, yMax);
   }
-*/
-  AliceO2::Hough::Accumulator* test = new AliceO2::Hough::Accumulator("", "", 1, 2.0, 2.0, 1, 2.0, 2.0);
 
   AliceO2::Hough::Accumulator* hist = parameterSpace[0];
   Int_t ncellsx = (hist->GetNbinsX() + 3) / 2;
@@ -656,6 +649,9 @@ int main(int argc, char** argv)
   determineMinMaxAlphaBeta(totalNumberOfClusters);
   drawConformalMappingClusters1D(15, totalNumberOfClusters);
 
+  //  AliceO2::Hough::Accumulator** test = new AliceO2::Hough::Accumulator* [5];
+
+  // AliceO2::Hough::Accumulator test2;
   // DEBUG
   /*  totalNumberOfClusters = 100;
     for (int kk = 0; kk < 6; kk++) {

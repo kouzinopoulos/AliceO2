@@ -4,6 +4,7 @@ set(INCLUDE_DIRECTORIES
   ${ROOT_INCLUDE_DIR}
   ${ALIROOT}/include
   ${SIMPATH}/include/root
+  ${CMAKE_SOURCE_DIR}/devices/hough
 )
 
 include_directories(SYSTEM ${INCLUDE_DIRECTORIES})
@@ -25,7 +26,6 @@ set(LIBRARY_NAME ALICEHOUGH)
 
 GENERATE_LIBRARY()
 
-
 Set(Exe_Names
   runHough
 )
@@ -42,7 +42,7 @@ ForEach(_file RANGE 0 ${_length})
   list(GET Exe_Source ${_file} _src)
   set(EXE_NAME ${_name})
   set(SRCS ${_src})
-  set(DEPENDENCIES dl Core RIO Gpad Hist AliHLTTPC HLTbase boost_system boost_filesystem)
+  set(DEPENDENCIES dl Core RIO Gpad Hist AliHLTTPC HLTbase ALICEHOUGH boost_system boost_filesystem)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
 

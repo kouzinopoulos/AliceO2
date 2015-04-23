@@ -6,11 +6,6 @@
 #define ALICEO2_HOUGH_ACCUMULATOR_H_
 
 #include "AliHLTStandardIncludes.h"
-#include "AliHLTRootTypes.h"
-
-#ifdef use_root
-#include <TH2.h>
-#endif
 
 namespace AliceO2 {
 namespace Hough {
@@ -18,154 +13,70 @@ namespace Hough {
 class Accumulator {
 public:
   Accumulator();
-  Accumulator(const Char_t* name, const Char_t* id, Int_t nxbin, Double_t xmin, Double_t xmax, Int_t nybin,
-              Double_t ymin, Double_t ymax);
+  Accumulator(int nxbin, double xmin, double xmax, int nybin, double ymin,
+              double ymax);
   virtual ~Accumulator();
 
   void Reset();
-  virtual void Fill(Double_t x, Double_t y, Int_t weight = 1);
-  virtual void Fill(Double_t x, Int_t ybin, Int_t weight = 1);
-  virtual void Fill(Int_t xbin, Double_t y, Int_t weight = 1);
-  virtual void Fill(Int_t xbin, Int_t ybin, Int_t weight = 1);
-  virtual Int_t FindBin(Double_t x, Double_t y) const;
-  virtual Int_t FindLabelBin(Double_t x, Double_t y) const;
-  virtual Int_t FindXbin(Double_t x) const;
-  virtual Int_t FindYbin(Double_t y) const;
-  Int_t GetBin(Int_t xbin, Int_t ybin) const;
-  Int_t GetLabelBin(Int_t xbin, Int_t ybin) const;
-  Int_t GetBinContent(Int_t bin) const;
-  void SetBinContent(Int_t xbin, Int_t ybin, Int_t value);
-  void SetBinContent(Int_t bin, Int_t value);
-  void AddBinContent(Int_t xbin, Int_t ybin, Int_t weight);
-  void AddBinContent(Int_t bin, Int_t weight);
-  void Add(Accumulator* h1, Double_t weight = 1);
-  void SetThreshold(Int_t i)
-  {
-    fThreshold = i;
-  }
-  void CreateRootHisto();
-  virtual void Draw(const Char_t* option = "hist");
-  virtual void Print() const {};
+  virtual void Fill(double x, double y, int weight = 1);
+  virtual void Fill(double x, int ybin, int weight = 1);
+  virtual void Fill(int xbin, double y, int weight = 1);
+  virtual void Fill(int xbin, int ybin, int weight = 1);
+  virtual int FindBin(double x, double y) const;
+  virtual int FindLabelBin(double x, double y) const;
+  virtual int FindXbin(double x) const;
+  virtual int FindYbin(double y) const;
+  int GetBin(int xbin, int ybin) const;
+  int GetLabelBin(int xbin, int ybin) const;
+  int GetBinContent(int bin) const;
+  void SetBinContent(int xbin, int ybin, int value);
+  void SetBinContent(int bin, int value);
+  void AddBinContent(int xbin, int ybin, int weight);
+  void AddBinContent(int bin, int weight);
+  void Add(Accumulator* h1, double weight = 1);
+  void SetThreshold(int i) { fThreshold = i; }
 
-  friend ofstream& operator<<(ofstream& o, const Accumulator& h);
+  double GetXmin() const { return fXmin; }
+  double GetXmax() const { return fXmax; }
+  double GetYmin() const { return fYmin; }
+  double GetYmax() const { return fYmax; }
+  virtual double GetBinCenterX(int xbin) const;
+  virtual double GetBinCenterY(int ybin) const;
+  double GetPreciseBinCenterX(float xbin) const;
+  double GetPreciseBinCenterY(float ybin) const;
+  double GetBinWidthX() const { return fBinwidthX; }
+  double GetBinWidthY() const { return fBinwidthY; }
+  int GetFirstXbin() const { return fFirstXbin; }
+  int GetLastXbin() const { return fLastXbin; }
+  int GetFirstYbin() const { return fFirstYbin; }
+  int GetLastYbin() const { return fLastYbin; }
+  int GetNbinsX() const { return fNxbins; }
+  int GetNbinsY() const { return fNybins; }
+  int GetNEntries() const { return fEntries; }
 
-#ifdef use_root
-  TH2F* GetRootHisto();
-#else
-  void* GetRootHisto();
-#endif
-
-  Double_t GetXmin() const
-  {
-    return fXmin;
-  }
-  Double_t GetXmax() const
-  {
-    return fXmax;
-  }
-  Double_t GetYmin() const
-  {
-    return fYmin;
-  }
-  Double_t GetYmax() const
-  {
-    return fYmax;
-  }
-  virtual Double_t GetBinCenterX(Int_t xbin) const;
-  virtual Double_t GetBinCenterY(Int_t ybin) const;
-  Double_t GetPreciseBinCenterX(Float_t xbin) const;
-  Double_t GetPreciseBinCenterY(Float_t ybin) const;
-  Double_t GetBinWidthX() const
-  {
-    return fBinwidthX;
-  }
-  Double_t GetBinWidthY() const
-  {
-    return fBinwidthY;
-  }
-  Int_t GetFirstXbin() const
-  {
-    return fFirstXbin;
-  }
-  Int_t GetLastXbin() const
-  {
-    return fLastXbin;
-  }
-  Int_t GetFirstYbin() const
-  {
-    return fFirstYbin;
-  }
-  Int_t GetLastYbin() const
-  {
-    return fLastYbin;
-  }
-  Int_t GetNbinsX() const
-  {
-    return fNxbins;
-  }
-  Int_t GetNbinsY() const
-  {
-    return fNybins;
-  }
-  Int_t GetNEntries() const
-  {
-    return fEntries;
-  }
-
-  Int_t* fContent; //!
-  Int_t* GetContentArray() const
-  {
-    return fContent;
-  }
+  int* fContent; //!
+  int* GetContentArray() const { return fContent; }
 
 protected:
-  Char_t fName[100]; // Name of the histogram
-  Int_t fNxbins;     // Number of bins in the histogram
-  Int_t fNybins;     // Number of bins in the histogram
-  Int_t fNcells;     // Overall number of bins in the histogram
-  Int_t fEntries;    // Number of entries in the histogram
-  Int_t fFirstXbin;  // First active bin
-  Int_t fFirstYbin;  // First active bin
-  Int_t fLastXbin;   // Last active bin
-  Int_t fLastYbin;   // Last active bin
-  Int_t fThreshold;  // Bin content threshold
+  int fNxbins;     // Number of bins in the histogram
+  int fNybins;     // Number of bins in the histogram
+  int fNcells;     // Overall number of bins in the histogram
+  int fEntries;    // Number of entries in the histogram
+  int fFirstXbin;  // First active bin
+  int fFirstYbin;  // First active bin
+  int fLastXbin;   // Last active bin
+  int fLastYbin;   // Last active bin
+  int fThreshold;  // Bin content threshold
 
-  Double_t fXmin; // Lower limit in X
-  Double_t fYmin; // Lower limit in Y
-  Double_t fXmax; // Upper limit in X
-  Double_t fYmax; // Upper limit in Y
-
-#ifdef use_root
-  TH2F* fRootHisto; // Corresponding ROOT histogram
-#endif
+  double fXmin; // Lower limit in X
+  double fYmin; // Lower limit in Y
+  double fXmax; // Upper limit in X
+  double fYmax; // Upper limit in Y
 
 private:
-  Double_t fBinwidthX; // Bin width of the Hough space
-  Double_t fBinwidthY; // Bin width of the Hough space
-
-  ClassDef(Accumulator, 1) // 2D histogram class
+  double fBinwidthX; // Bin width of the Hough space
+  double fBinwidthY; // Bin width of the Hough space
 };
-
-typedef Accumulator AliL3Histogram; // for backward comaptibility
-
-#ifdef use_root
-inline TH2F* Accumulator::GetRootHisto()
-{
-  if (!fRootHisto) {
-    STDCERR << "Accumulator::GetRootHisto() : You must first Draw histogram before accessing it" << STDENDL;
-    return 0;
-  } else
-    return fRootHisto;
-}
-#else
-inline void* Accumulator::GetRootHisto()
-{
-  STDCERR << "Accumulator::GetRootHisto() : You must compile with ROOT in order to interface the ROOT histogram"
-          << STDENDL;
-  return 0;
-}
-#endif
 }
 }
-
 #endif

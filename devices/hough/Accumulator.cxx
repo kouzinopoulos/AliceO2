@@ -8,12 +8,9 @@
 //#define _IFON_
 
 using namespace std;
-
 using namespace AliceO2::Hough;
 
-ClassImp(AliceO2::Hough::Accumulator)
-
-  Accumulator::Accumulator()
+Accumulator::Accumulator()
 {
   // Default constructor
   fNxbins = 0;
@@ -32,17 +29,11 @@ ClassImp(AliceO2::Hough::Accumulator)
   fEntries = 0;
   fContent = 0;
   fThreshold = 0;
-#ifdef use_root
-  fRootHisto = 0;
-#endif
 }
 
-Accumulator::Accumulator(const Char_t* name, const Char_t* /*id*/, Int_t nxbin, Double_t xmin, Double_t xmax,
-                         Int_t nybin, Double_t ymin, Double_t ymax)
+Accumulator::Accumulator(int nxbin, double xmin, double xmax, int nybin,
+                         double ymin, double ymax)
 {
-  // Normal constructor
-  strcpy(fName, name);
-
   fNxbins = nxbin;
   fNybins = nybin;
   fNcells = (nxbin + 2) * (nybin + 2);
@@ -58,12 +49,9 @@ Accumulator::Accumulator(const Char_t* name, const Char_t* /*id*/, Int_t nxbin, 
   fFirstYbin = 1;
   fLastXbin = nxbin;
   fLastYbin = nybin;
-#ifdef use_root
-  fRootHisto = 0;
-#endif
   fThreshold = 0;
 
-  fContent = new Int_t[fNcells];
+  fContent = new int[fNcells];
   Reset();
 }
 
@@ -72,26 +60,22 @@ Accumulator::~Accumulator()
   // Destructor
   if (fContent)
     delete[] fContent;
-#ifdef use_root
-  if (fRootHisto)
-    delete fRootHisto;
-#endif
 }
 
 void Accumulator::Reset()
 {
   // Reset histogram contents
   if (fContent)
-    for (Int_t i = 0; i < fNcells; i++)
+    for (int i = 0; i < fNcells; i++)
       fContent[i] = 0;
 
   fEntries = 0;
 }
 
-void Accumulator::Fill(Double_t x, Double_t y, Int_t weight)
+void Accumulator::Fill(double x, double y, int weight)
 {
   // Fill the weight into a bin which correspond to x and y
-  Int_t bin = FindBin(x, y);
+  int bin = FindBin(x, y);
 #ifdef _IFON_
   if (bin < 0)
     return;
@@ -100,11 +84,11 @@ void Accumulator::Fill(Double_t x, Double_t y, Int_t weight)
   AddBinContent(bin, weight);
 }
 
-void Accumulator::Fill(Double_t x, Int_t ybin, Int_t weight)
+void Accumulator::Fill(double x, int ybin, int weight)
 {
   // Fill the weight into a bin which correspond to x and ybin
-  Int_t xbin = FindXbin(x);
-  Int_t bin = GetBin(xbin, ybin);
+  int xbin = FindXbin(x);
+  int bin = GetBin(xbin, ybin);
 #ifdef _IFON_
   if (bin < 0)
     return;
@@ -113,11 +97,11 @@ void Accumulator::Fill(Double_t x, Int_t ybin, Int_t weight)
   AddBinContent(bin, weight);
 }
 
-void Accumulator::Fill(Int_t xbin, Double_t y, Int_t weight)
+void Accumulator::Fill(int xbin, double y, int weight)
 {
   // Fill the weight into a bin which correspond to xbin and y
-  Int_t ybin = FindYbin(y);
-  Int_t bin = GetBin(xbin, ybin);
+  int ybin = FindYbin(y);
+  int bin = GetBin(xbin, ybin);
 #ifdef _IFON_
   if (bin < 0)
     return;
@@ -126,10 +110,10 @@ void Accumulator::Fill(Int_t xbin, Double_t y, Int_t weight)
   AddBinContent(bin, weight);
 }
 
-void Accumulator::Fill(Int_t xbin, Int_t ybin, Int_t weight)
+void Accumulator::Fill(int xbin, int ybin, int weight)
 {
   // Fill the weight into a bin which correspond to xbin and ybin
-  Int_t bin = GetBin(xbin, ybin);
+  int bin = GetBin(xbin, ybin);
 #ifdef _IFON_
   if (bin < 0)
     return;
@@ -138,11 +122,11 @@ void Accumulator::Fill(Int_t xbin, Int_t ybin, Int_t weight)
   AddBinContent(bin, weight);
 }
 
-Int_t Accumulator::FindBin(Double_t x, Double_t y) const
+int Accumulator::FindBin(double x, double y) const
 {
   // Finds the bin which correspond to x and y
-  Int_t xbin = FindXbin(x);
-  Int_t ybin = FindYbin(y);
+  int xbin = FindXbin(x);
+  int ybin = FindYbin(y);
 #ifdef _IFON_
   if (!xbin || !ybin)
     return -1;
@@ -151,11 +135,11 @@ Int_t Accumulator::FindBin(Double_t x, Double_t y) const
   return GetBin(xbin, ybin);
 }
 
-Int_t Accumulator::FindLabelBin(Double_t x, Double_t y) const
+int Accumulator::FindLabelBin(double x, double y) const
 {
   // Returns the corresponding bin with the mc labels
-  Int_t xbin = FindXbin(x);
-  Int_t ybin = FindYbin(y);
+  int xbin = FindXbin(x);
+  int ybin = FindYbin(y);
 #ifdef _IFON_
   if (!xbin || !ybin)
     return -1;
@@ -164,25 +148,25 @@ Int_t Accumulator::FindLabelBin(Double_t x, Double_t y) const
   return GetLabelBin(xbin, ybin);
 }
 
-Int_t Accumulator::FindXbin(Double_t x) const
+int Accumulator::FindXbin(double x) const
 {
   // Finds the bin which correspond to x
   if (x < fXmin || x > fXmax)
     return 0;
 
-  return 1 + (Int_t)(fNxbins * (x - fXmin) / (fXmax - fXmin));
+  return 1 + (int)(fNxbins * (x - fXmin) / (fXmax - fXmin));
 }
 
-Int_t Accumulator::FindYbin(Double_t y) const
+int Accumulator::FindYbin(double y) const
 {
   // Finds the bin which correspond to y
   if (y < fYmin || y > fYmax)
     return 0;
 
-  return 1 + (Int_t)(fNybins * (y - fYmin) / (fYmax - fYmin));
+  return 1 + (int)(fNybins * (y - fYmin) / (fYmax - fYmin));
 }
 
-Int_t Accumulator::GetBin(Int_t xbin, Int_t ybin) const
+int Accumulator::GetBin(int xbin, int ybin) const
 {
   // Returns the bin which correspond to xbin and ybin
   if (xbin < fFirstXbin || xbin > fLastXbin)
@@ -193,7 +177,7 @@ Int_t Accumulator::GetBin(Int_t xbin, Int_t ybin) const
   return xbin + ybin * (fNxbins + 2);
 }
 
-Int_t Accumulator::GetLabelBin(Int_t xbin, Int_t ybin) const
+int Accumulator::GetLabelBin(int xbin, int ybin) const
 {
   // Returns the corresponding bin with the mc labels
   if (xbin < fFirstXbin || xbin > fLastXbin)
@@ -201,10 +185,10 @@ Int_t Accumulator::GetLabelBin(Int_t xbin, Int_t ybin) const
   if (ybin < fFirstYbin || ybin > fLastYbin)
     return -1;
 
-  return (Int_t)(xbin / 2) + ((Int_t)(ybin / 2)) * ((Int_t)((fNxbins + 3) / 2));
+  return (int)(xbin / 2) + ((int)(ybin / 2)) * ((int)((fNxbins + 3) / 2));
 }
 
-Int_t Accumulator::GetBinContent(Int_t bin) const
+int Accumulator::GetBinContent(int bin) const
 {
   // Return the bin content
   if (bin >= fNcells) {
@@ -217,10 +201,10 @@ Int_t Accumulator::GetBinContent(Int_t bin) const
   return fContent[bin];
 }
 
-void Accumulator::SetBinContent(Int_t xbin, Int_t ybin, Int_t value)
+void Accumulator::SetBinContent(int xbin, int ybin, int value)
 {
   // Set bin content
-  Int_t bin = GetBin(xbin, ybin);
+  int bin = GetBin(xbin, ybin);
 #ifdef _IFON_
   if (bin == 0)
     return;
@@ -229,7 +213,7 @@ void Accumulator::SetBinContent(Int_t xbin, Int_t ybin, Int_t value)
   SetBinContent(bin, value);
 }
 
-void Accumulator::SetBinContent(Int_t bin, Int_t value)
+void Accumulator::SetBinContent(int bin, int value)
 {
   // Set bin content
 
@@ -243,10 +227,10 @@ void Accumulator::SetBinContent(Int_t bin, Int_t value)
   fContent[bin] = value;
 }
 
-void Accumulator::AddBinContent(Int_t xbin, Int_t ybin, Int_t weight)
+void Accumulator::AddBinContent(int xbin, int ybin, int weight)
 {
   // Adds weight to bin content
-  Int_t bin = GetBin(xbin, ybin);
+  int bin = GetBin(xbin, ybin);
 #ifdef _IFON_
   if (bin == 0)
     return;
@@ -255,7 +239,7 @@ void Accumulator::AddBinContent(Int_t xbin, Int_t ybin, Int_t weight)
   AddBinContent(bin, weight);
 }
 
-void Accumulator::AddBinContent(Int_t bin, Int_t weight)
+void Accumulator::AddBinContent(int bin, int weight)
 {
   // Adds weight to bin content
   if (bin < 0 || bin > fNcells) {
@@ -268,7 +252,7 @@ void Accumulator::AddBinContent(Int_t bin, Int_t weight)
   fContent[bin] += weight;
 }
 
-void Accumulator::Add(Accumulator* h1, Double_t /*weight*/)
+void Accumulator::Add(Accumulator* h1, double /*weight*/)
 {
   // Adding two histograms. Should be identical.
 
@@ -288,13 +272,13 @@ void Accumulator::Add(Accumulator* h1, Double_t /*weight*/)
     return;
   }
 
-  for (Int_t bin = 0; bin < fNcells; bin++)
+  for (int bin = 0; bin < fNcells; bin++)
     fContent[bin] += h1->GetBinContent(bin);
 
   fEntries += h1->GetNEntries();
 }
 
-Double_t Accumulator::GetBinCenterX(Int_t xbin) const
+double Accumulator::GetBinCenterX(int xbin) const
 {
   // Returns the position of the center of a bin
   if (xbin < fFirstXbin || xbin > fLastXbin) {
@@ -305,7 +289,7 @@ Double_t Accumulator::GetBinCenterX(Int_t xbin) const
   return fXmin + (xbin - 0.5) * fBinwidthX;
 }
 
-Double_t Accumulator::GetBinCenterY(Int_t ybin) const
+double Accumulator::GetBinCenterY(int ybin) const
 {
   // Returns the position of the center of a bin
   if (ybin < fFirstYbin || ybin > fLastYbin) {
@@ -316,7 +300,7 @@ Double_t Accumulator::GetBinCenterY(Int_t ybin) const
   return fYmin + (ybin - 0.5) * fBinwidthY;
 }
 
-Double_t Accumulator::GetPreciseBinCenterX(Float_t xbin) const
+double Accumulator::GetPreciseBinCenterX(float xbin) const
 {
   // Returns the position of the center of a bin using precise values inside the bin
   if (xbin < (fFirstXbin - 1.5) || xbin > (fLastXbin + 1.5)) {
@@ -327,7 +311,7 @@ Double_t Accumulator::GetPreciseBinCenterX(Float_t xbin) const
   return fXmin + (xbin - 0.5) * fBinwidthX;
 }
 
-Double_t Accumulator::GetPreciseBinCenterY(Float_t ybin) const
+double Accumulator::GetPreciseBinCenterY(float ybin) const
 {
   // Returns the position of the center of a bin using precise values inside the bin
   if (ybin < (fFirstYbin - 1.5) || ybin > (fLastYbin + 1.5)) {
@@ -336,49 +320,4 @@ Double_t Accumulator::GetPreciseBinCenterY(Float_t ybin) const
   }
   //  return fYmin + (ybin-1) * fBinwidthY + 0.5*fBinwidthY;
   return fYmin + (ybin - 0.5) * fBinwidthY;
-}
-
-void Accumulator::Draw(const Char_t* option)
-{
-// Fill the contents of the corresponding ROOT histogram and draws it
-#ifdef use_root
-  if (!fRootHisto)
-    CreateRootHisto();
-
-  for (Int_t xbin = GetFirstXbin(); xbin <= GetLastXbin(); xbin++) {
-    for (Int_t ybin = GetFirstYbin(); ybin <= GetLastYbin(); ybin++) {
-      Int_t bin = GetBin(xbin, ybin);
-      fRootHisto->Fill(GetBinCenterX(xbin), GetBinCenterY(ybin), GetBinContent(bin));
-    }
-  }
-
-  // fRootHisto->SetStats(kFALSE);
-  fRootHisto->Draw(option);
-  return;
-#else
-  cerr << "Accumulator::Draw : You need to compile with ROOT in order to draw histogram" << endl;
-#endif
-}
-
-void Accumulator::CreateRootHisto()
-{
-// Create ROOT histogram out of Accumulator
-#ifdef use_root
-  fRootHisto = new TH2F(fName, "", fNxbins, fXmin, fXmax, fNybins, fYmin, fYmax);
-  return;
-#else
-  cerr << "Accumulator::CreateRootHisto : You need to compile with ROOT in order to create ROOT histogram" << endl;
-#endif
-}
-
-ofstream& operator<<(ofstream& o, const Accumulator& h)
-{
-  for (Int_t xbin = h.GetFirstXbin(); xbin <= h.GetLastXbin(); xbin++) {
-    for (Int_t ybin = h.GetFirstYbin(); ybin <= h.GetLastYbin(); ybin++) {
-      Int_t bin = h.GetBin(xbin, ybin);
-      o << h.GetBinContent(bin) << " ";
-    }
-    o << endl;
-  }
-  return o;
 }

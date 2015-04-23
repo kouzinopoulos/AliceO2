@@ -111,10 +111,7 @@ Int_t numberOfPads[159] = { 67,  67,  69,  69,  69,  71,  71,  71,  73,  73,  73
                             111, 111, 113, 113, 113, 115, 115, 117, 117, 119, 119, 121, 121, 121, 123, 123, 125, 125,
                             127, 127, 127, 129, 129, 131, 131, 133, 133, 135, 135, 135, 137, 137, 139 };
 
-Double_t Pi()
-{
-  return 3.141592653589793;
-}
+Double_t Pi() { return 3.141592653589793; }
 
 Double_t xMin;
 Double_t xMax;
@@ -186,32 +183,14 @@ int getRBinValue(float r)
   return ((r - rMin) * rResolution) / (rMax - rMin);
 }
 
-UInt_t getTrackEtaSlice(int trackNumber)
-{
-  return trackData[trackNumber].mEtaSlice;
-}
+UInt_t getTrackEtaSlice(int trackNumber) { return trackData[trackNumber].mEtaSlice; }
 
-Float_t getTrackAlpha1(int trackNumber)
-{
-  return trackData[trackNumber].mAlpha1;
-}
-Float_t getTrackBeta1(int trackNumber)
-{
-  return trackData[trackNumber].mBeta1;
-}
-Float_t getTrackAlpha2(int trackNumber)
-{
-  return trackData[trackNumber].mAlpha2;
-}
-Float_t getTrackBeta2(int trackNumber)
-{
-  return trackData[trackNumber].mBeta2;
-}
+Float_t getTrackAlpha1(int trackNumber) { return trackData[trackNumber].mAlpha1; }
+Float_t getTrackBeta1(int trackNumber) { return trackData[trackNumber].mBeta1; }
+Float_t getTrackAlpha2(int trackNumber) { return trackData[trackNumber].mAlpha2; }
+Float_t getTrackBeta2(int trackNumber) { return trackData[trackNumber].mBeta2; }
 
-UInt_t getNumberOfTracks()
-{
-  return trackData.size();
-}
+UInt_t getNumberOfTracks() { return trackData.size(); }
 
 void setTrackParameters(UInt_t etaSlice, Float_t alpha1, Float_t beta1, Float_t alpha2, Float_t beta2)
 {
@@ -224,70 +203,25 @@ void setTrackParameters(UInt_t etaSlice, Float_t alpha1, Float_t beta1, Float_t 
   trackData.push_back(track);
 }
 
-UInt_t getClusterID(int clusterNumber)
-{
-  return clusterData[clusterNumber].mID;
-}
-UInt_t getClusterSlice(int clusterNumber)
-{
-  return clusterData[clusterNumber].mTPCSlice;
-}
-UInt_t getClusterPartition(int clusterNumber)
-{
-  return clusterData[clusterNumber].mTPCPartition;
-}
+UInt_t getClusterID(int clusterNumber) { return clusterData[clusterNumber].mID; }
+UInt_t getClusterSlice(int clusterNumber) { return clusterData[clusterNumber].mTPCSlice; }
+UInt_t getClusterPartition(int clusterNumber) { return clusterData[clusterNumber].mTPCPartition; }
 
-Double_t getClusterX(int clusterNumber)
-{
-  return clusterData[clusterNumber].mX;
-}
-Double_t getClusterY(int clusterNumber)
-{
-  return clusterData[clusterNumber].mY;
-}
-Double_t getClusterZ(int clusterNumber)
-{
-  return clusterData[clusterNumber].mZ;
-}
+Double_t getClusterX(int clusterNumber) { return clusterData[clusterNumber].mX; }
+Double_t getClusterY(int clusterNumber) { return clusterData[clusterNumber].mY; }
+Double_t getClusterZ(int clusterNumber) { return clusterData[clusterNumber].mZ; }
 
-UInt_t getClusterCharge(int clusterNumber)
-{
-  return clusterData[clusterNumber].mCharge;
-}
+UInt_t getClusterCharge(int clusterNumber) { return clusterData[clusterNumber].mCharge; }
 
-Double_t getClusterAlpha(int clusterNumber)
-{
-  return clusterData[clusterNumber].mAlpha;
-}
-Double_t getClusterBeta(int clusterNumber)
-{
-  return clusterData[clusterNumber].mBeta;
-}
-Double_t getClusterEta(int clusterNumber)
-{
-  return clusterData[clusterNumber].mEta;
-}
-Int_t getClusterEtaSlice(int clusterNumber)
-{
-  return clusterData[clusterNumber].mEtaSlice;
-}
+Double_t getClusterAlpha(int clusterNumber) { return clusterData[clusterNumber].mAlpha; }
+Double_t getClusterBeta(int clusterNumber) { return clusterData[clusterNumber].mBeta; }
+Double_t getClusterEta(int clusterNumber) { return clusterData[clusterNumber].mEta; }
+Int_t getClusterEtaSlice(int clusterNumber) { return clusterData[clusterNumber].mEtaSlice; }
 
-void setClusterAlpha(int clusterNumber, Double_t alpha)
-{
-  clusterData[clusterNumber].mAlpha = alpha;
-}
-void setClusterBeta(int clusterNumber, Double_t beta)
-{
-  clusterData[clusterNumber].mBeta = beta;
-}
-void setClusterEta(int clusterNumber, Double_t eta)
-{
-  clusterData[clusterNumber].mEta = eta;
-}
-void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice)
-{
-  clusterData[clusterNumber].mEtaSlice = etaSlice;
-}
+void setClusterAlpha(int clusterNumber, Double_t alpha) { clusterData[clusterNumber].mAlpha = alpha; }
+void setClusterBeta(int clusterNumber, Double_t beta) { clusterData[clusterNumber].mBeta = beta; }
+void setClusterEta(int clusterNumber, Double_t eta) { clusterData[clusterNumber].mEta = eta; }
+void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice) { clusterData[clusterNumber].mEtaSlice = etaSlice; }
 
 void setClusterParameters(UInt_t clusterID, Double_t x, Double_t y, Double_t z, UInt_t charge, UInt_t tpcSlice,
                           UInt_t tpcPartition)
