@@ -20,6 +20,11 @@ link_directories(${LINK_DIRECTORIES})
 
 set(SRCS
   Accumulator.cxx
+  Transform.cxx
+  Track.cxx
+  HoughBaseTransformer.cxx
+  HoughTransformerRow.cxx
+  HoughTrack.cxx
 )
 
 set(LIBRARY_NAME ALICEHOUGH)

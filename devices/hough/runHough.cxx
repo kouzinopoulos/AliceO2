@@ -413,14 +413,120 @@ void houghTransform(int totalNumberOfClusters)
   Int_t ncellsx = (hist->GetNbinsX() + 3) / 2;
   Int_t ncellsy = (hist->GetNbinsY() + 3) / 2;
   Int_t ncells = ncellsx * ncellsy;
-
-  if (!fGapCount) {
-    fGapCount = new UChar_t* [etaResolution];
-    for (Int_t i = 0; i < etaResolution; i++) {
-      fGapCount[i] = new UChar_t[ncells];
+  /*
+    if (!fGapCount) {
+      fGapCount = new UChar_t* [etaResolution];
+      for (Int_t i = 0; i < etaResolution; i++) {
+        fGapCount[i] = new UChar_t[ncells];
+      }
     }
-  }
 
+    AliHLTHistogram* hist = fParamSpace[0];
+    Int_t ncells = (hist->GetNbinsX() + 2) * (hist->GetNbinsY() + 2);
+
+    if (!fGapCount) {
+      cout << "Transformer: Allocating " << etaResolution * ncells * sizeof(UChar_t) << " bytes to fGapCount" << endl;
+      fGapCount = new UChar_t* [etaResolution];
+      for (Int_t i = 0; i < etaResolution; i++) {
+        fGapCount[i] = new UChar_t[ncells];
+      }
+    }
+    if (!fCurrentRowCount) {
+      cout << "Transformer: Allocating " << etaResolution * ncells * sizeof(UChar_t) << " bytes to fCurrentRowCount" <<
+    endl;
+      fCurrentRowCount = new UChar_t* [etaResolution];
+      for (Int_t i = 0; i < etaResolution; i++) {
+        fCurrentRowCount[i] = new UChar_t[ncells];
+      }
+    }
+    if (!fPrevBin) {
+      cout << "Transformer: Allocating " << etaResolution * ncells * sizeof(UChar_t) << " bytes to fPrevBin" << endl;
+      fPrevBin = new UChar_t* [etaResolution];
+      for (Int_t i = 0; i < etaResolution; i++) {
+        fPrevBin[i] = new UChar_t[ncells];
+      }
+    }
+    if (!fNextBin) {
+      cout << "Transformer: Allocating " << etaResolution * ncells * sizeof(UChar_t) << " bytes to fNextBin" << endl;
+      fNextBin = new UChar_t* [etaResolution];
+      for (Int_t i = 0; i < etaResolution; i++) {
+        fNextBin[i] = new UChar_t[ncells];
+      }
+    }
+
+    Int_t ncellsy = hist->GetNbinsY() + 2;
+
+    if (!fNextRow) {
+      cout << "Transformer: Allocating " << etaResolution * ncellsy * sizeof(UChar_t) << " bytes to fNextRow" << endl;
+      fNextRow = new UChar_t* [etaResolution];
+      for (Int_t i = 0; i < etaResolution; i++) {
+        fNextRow[i] = new UChar_t[ncellsy];
+      }
+    }
+
+    if (!fTrackNRows) {
+      cout << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fTrackNRows" << endl;
+      fTrackNRows = new UChar_t[ncells];
+
+      cout << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fTrackFirstRow" << endl;
+      fTrackFirstRow = new UChar_t[ncells];
+
+      cout << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fTrackLastRow" << endl;
+      fTrackLastRow = new UChar_t[ncells];
+
+      cout << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fInitialGapCount" << endl;
+      fInitialGapCount = new UChar_t[ncells];
+
+      AliHLTHoughTrack track;
+      Int_t xmin = hist->GetFirstXbin();
+      Int_t xmax = hist->GetLastXbin();
+      Int_t xmiddle = (hist->GetNbinsX() + 1) / 2;
+      Int_t ymin = hist->GetFirstYbin();
+      Int_t ymax = hist->GetLastYbin();
+      Int_t nxbins = hist->GetNbinsX() + 2;
+      Int_t nxgrid = (hist->GetNbinsX() + 3) / 2 + 1;
+      Int_t nygrid = hist->GetNbinsY() + 3;
+
+      AliHLTTrackLength* tracklength = new AliHLTTrackLength[nxgrid * nygrid];
+      memset(tracklength, 0, nxgrid * nygrid * sizeof(AliHLTTrackLength));
+
+      for (Int_t ybin = ymin - 1; ybin <= (ymax + 1); ybin++) {
+        for (Int_t xbin = xmin - 1; xbin <= xmiddle; xbin++) {
+          fTrackNRows[xbin + ybin * nxbins] = 255;
+          for (Int_t deltay = 0; deltay <= 1; deltay++) {
+            for (Int_t deltax = 0; deltax <= 1; deltax++) {
+
+              AliHLTTrackLength* curtracklength = &tracklength[(xbin + deltax) + (ybin + deltay) * nxgrid];
+              UInt_t maxfirstrow = 0;
+              UInt_t maxlastrow = 0;
+              Float_t maxtrackpt = 0;
+              if (curtracklength->fIsFilled) {
+                maxfirstrow = curtracklength->fFirstRow;
+                maxlastrow = curtracklength->fLastRow;
+                maxtrackpt = curtracklength->fTrackPt;
+              } else {
+                Float_t xtrack = hist->GetPreciseBinCenterX((Float_t)xbin + 0.5 * (Float_t)(2 * deltax - 1));
+                Float_t ytrack = hist->GetPreciseBinCenterY((Float_t)ybin + 0.5 * (Float_t)(2 * deltay - 1));
+
+                Float_t psi = atan((xtrack - ytrack) / (fgBeta1 - fgBeta2));
+                Float_t kappa = 2.0 * (xtrack * cos(psi) - fgBeta1 * sin(psi));
+                track.SetTrackParameters(kappa, psi, 1);
+                maxtrackpt = track.GetPt();
+                if (maxtrackpt < 0.9 * 0.1 * AliHLTTransform::GetSolenoidField()) {
+                  maxfirstrow = maxlastrow = 0;
+                  curtracklength->fIsFilled = kTRUE;
+                  curtracklength->fFirstRow = maxfirstrow;
+                  curtracklength->fLastRow = maxlastrow;
+                  curtracklength->fTrackPt = maxtrackpt;
+                } else {
+                  Bool_t firstrow = kFALSE;
+                  UInt_t curfirstrow = 0;
+                  UInt_t curlastrow = 0;
+
+                  Double_t centerx = track.GetCenterX();
+                  Double_t centery = track.GetCenterY();
+                  Double_t radius = track.GetRadius();
+  */
   // Iterate through all the pad rows per eta slice for each slice of a TPC partition/patch
   for (UInt_t partition = 0; partition < 6; partition++) {
     for (UInt_t slice = 0; slice < 36; slice++) {
@@ -433,7 +539,8 @@ void houghTransform(int totalNumberOfClusters)
   }
 }
 
-/// Determine the minimum and maximum values of the pseudorapidity (eta). That way, the TPC digits can be transformed in
+/// Determine the minimum and maximum values of the pseudorapidity (eta). That way, the TPC digits can be
+/// transformed in
 /// two dimensions instead of three in slices of similar pseudorapidity
 void determineMinMaxEta(int totalNumberOfClusters)
 {
@@ -457,7 +564,8 @@ void determineMinMaxEta(int totalNumberOfClusters)
   cout << "Minimum eta: " << etalphaMin << " Maximum eta: " << etalphaMax << endl;
 }
 
-/// Determine the maximum ceiling to x,y,z coordinates from the clusterCartesianCoordinates vector to later allocate the
+/// Determine the maximum ceiling to x,y,z coordinates from the clusterCartesianCoordinates vector to
+/// later allocate the
 /// hough transform accumulator
 void determineMinMaxXY(int totalNumberOfClusters)
 {
@@ -484,7 +592,8 @@ void determineMinMaxXY(int totalNumberOfClusters)
   cout << "xMin: " << xMin << " xMax: " << xMax << " yMin: " << yMin << " yMax: " << yMax << endl;
 }
 
-/// Determine the maximum ceiling to a and b conformal mapping coordinates from the clusterCartesianCoordinates vector
+/// Determine the maximum ceiling to a and b conformal mapping coordinates from the
+/// clusterCartesianCoordinates vector
 /// to later allocate the hough transform accumulator
 void determineMinMaxAlphaBeta(int totalNumberOfClusters)
 {
@@ -556,7 +665,8 @@ int processData(std::string dataPath, std::string dataType, std::string dataOrig
     std::exit(1);
   }
 
-  // Create an AliHLTComponentBlockData object, fill it with default values and then set its pointer to the data buffer
+  // Create an AliHLTComponentBlockData object, fill it with default values and then set its pointer to
+  // the data buffer
   AliHLTComponentBlockData bd;
   AliHLTComponent::FillBlockData(bd);
   bd.fPtr = inputBuffer;
@@ -674,7 +784,8 @@ int main(int argc, char** argv)
 
     calculateEta(totalNumberOfClusters);
 
-    // Determine the minimum and maximum values of eta. That way the TPC digits can be grouped into pseudorapidity bins
+    // Determine the minimum and maximum values of eta. That way the TPC digits can be grouped into
+    pseudorapidity bins
     determineMinMaxEta(totalNumberOfClusters);
 
     // Discretize the eta values of all clusters into etaResolution bins

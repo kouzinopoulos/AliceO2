@@ -31,8 +31,7 @@ Accumulator::Accumulator()
   fThreshold = 0;
 }
 
-Accumulator::Accumulator(int nxbin, double xmin, double xmax, int nybin,
-                         double ymin, double ymax)
+Accumulator::Accumulator(int nxbin, double xmin, double xmax, int nybin, double ymin, double ymax)
 {
   fNxbins = nxbin;
   fNybins = nybin;

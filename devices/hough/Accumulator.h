@@ -1,6 +1,6 @@
 /// \file Accumulator.h
 /// \brief Definition of the Accumulator class
-/// \author Anders Vestbo <mailto:vestbo@fi.uib.no>
+/// \author Anders Vestbo <vestbo@fi.uib.no>
 
 #ifndef ALICEO2_HOUGH_ACCUMULATOR_H_
 #define ALICEO2_HOUGH_ACCUMULATOR_H_
@@ -13,8 +13,7 @@ namespace Hough {
 class Accumulator {
 public:
   Accumulator();
-  Accumulator(int nxbin, double xmin, double xmax, int nybin, double ymin,
-              double ymax);
+  Accumulator(int nxbin, double xmin, double xmax, int nybin, double ymin, double ymax);
   virtual ~Accumulator();
 
   void Reset();
@@ -58,15 +57,15 @@ public:
   int* GetContentArray() const { return fContent; }
 
 protected:
-  int fNxbins;     // Number of bins in the histogram
-  int fNybins;     // Number of bins in the histogram
-  int fNcells;     // Overall number of bins in the histogram
-  int fEntries;    // Number of entries in the histogram
-  int fFirstXbin;  // First active bin
-  int fFirstYbin;  // First active bin
-  int fLastXbin;   // Last active bin
-  int fLastYbin;   // Last active bin
-  int fThreshold;  // Bin content threshold
+  int fNxbins;    // Number of bins in the histogram
+  int fNybins;    // Number of bins in the histogram
+  int fNcells;    // Overall number of bins in the histogram
+  int fEntries;   // Number of entries in the histogram
+  int fFirstXbin; // First active bin
+  int fFirstYbin; // First active bin
+  int fLastXbin;  // Last active bin
+  int fLastYbin;  // Last active bin
+  int fThreshold; // Bin content threshold
 
   double fXmin; // Lower limit in X
   double fYmin; // Lower limit in Y
