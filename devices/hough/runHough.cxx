@@ -759,6 +759,18 @@ int main(int argc, char** argv)
   determineMinMaxAlphaBeta(totalNumberOfClusters);
   drawConformalMappingClusters1D(15, totalNumberOfClusters);
 
+  //FIXME: find the correct values here
+  //AliceO2::Hough::HoughTransformerRow row(Int_t slice, Int_t patch, Int_t netasegments, Bool_t /*DoMC*/, Float_t zvertex);
+  AliceO2::Hough::HoughTransformerRow row(0, 0, etaResolution);
+
+  row.Reset();
+
+  // Allocate space for the accumulator. This must be done before executing the TransformCircle method
+  row.CreateHistograms(rResolution, xMin, xMax, thetaResolution, yMin, yMax);
+
+  //FIXME: port the TransformCircleFromDigitArray method, by supplying the HLT data we already have instead of the required HLT binary file
+  row.TransformCircle();
+
   //  AliceO2::Hough::Accumulator** test = new AliceO2::Hough::Accumulator* [5];
 
   // AliceO2::Hough::Accumulator test2;

@@ -225,13 +225,13 @@ struct AliHLTTrackLength {
   Float_t fTrackPt; // Pt of the track
 };
 
+/// Create the histograms (parameter space)
+/// nxbin = #bins in X
+/// nybin = #bins in Y
+/// xmin xmax ymin ymax = histogram limits in X and Y
 void HoughTransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, Int_t nybin, Float_t ymin,
                                            Float_t ymax)
 {
-  // Create the histograms (parameter space)
-  // nxbin = #bins in X
-  // nybin = #bins in Y
-  // xmin xmax ymin ymax = histogram limits in X and Y
   if (fLastTransformer) {
     SetTransformerArrays((HoughTransformerRow*)fLastTransformer);
     return;
@@ -248,9 +248,8 @@ void HoughTransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xm
     Int_t ncellsy = (hist->GetNbinsY() + 3) / 2;
     Int_t ncells = ncellsx * ncellsy;
     if (!fTrackID) {
-      cout
-        << "Transformer: Allocating " << GetNEtaSegments() * ncells * sizeof(AliHLTTrackIndex) << " bytes to fTrackID"
-        << endl;
+      cout << "Transformer: Allocating " << GetNEtaSegments() * ncells * sizeof(AliHLTTrackIndex)
+           << " bytes to fTrackID" << endl;
       fTrackID = new AliHLTTrackIndex* [GetNEtaSegments()];
       for (Int_t i = 0; i < GetNEtaSegments(); i++)
         fTrackID[i] = new AliHLTTrackIndex[ncells];
@@ -260,55 +259,46 @@ void HoughTransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xm
   Accumulator* hist = fParamSpace[0];
   Int_t ncells = (hist->GetNbinsX() + 2) * (hist->GetNbinsY() + 2);
   if (!fGapCount) {
-    cout
-      << "Transformer: Allocating " << GetNEtaSegments() * ncells * sizeof(UChar_t) << " bytes to fGapCount" << endl;
+    cout << "Transformer: Allocating " << GetNEtaSegments() * ncells * sizeof(UChar_t) << " bytes to fGapCount" << endl;
     fGapCount = new UChar_t* [GetNEtaSegments()];
     for (Int_t i = 0; i < GetNEtaSegments(); i++)
       fGapCount[i] = new UChar_t[ncells];
   }
   if (!fCurrentRowCount) {
-    cout
-      << "Transformer: Allocating " << GetNEtaSegments() * ncells * sizeof(UChar_t) << " bytes to fCurrentRowCount"
-      << endl;
+    cout << "Transformer: Allocating " << GetNEtaSegments() * ncells * sizeof(UChar_t) << " bytes to fCurrentRowCount"
+         << endl;
     fCurrentRowCount = new UChar_t* [GetNEtaSegments()];
     for (Int_t i = 0; i < GetNEtaSegments(); i++)
       fCurrentRowCount[i] = new UChar_t[ncells];
   }
   if (!fPrevBin) {
-    cout
-      << "Transformer: Allocating " << GetNEtaSegments() * ncells * sizeof(UChar_t) << " bytes to fPrevBin" << endl;
+    cout << "Transformer: Allocating " << GetNEtaSegments() * ncells * sizeof(UChar_t) << " bytes to fPrevBin" << endl;
     fPrevBin = new UChar_t* [GetNEtaSegments()];
     for (Int_t i = 0; i < GetNEtaSegments(); i++)
       fPrevBin[i] = new UChar_t[ncells];
   }
   if (!fNextBin) {
-    cout
-      << "Transformer: Allocating " << GetNEtaSegments() * ncells * sizeof(UChar_t) << " bytes to fNextBin" << endl;
+    cout << "Transformer: Allocating " << GetNEtaSegments() * ncells * sizeof(UChar_t) << " bytes to fNextBin" << endl;
     fNextBin = new UChar_t* [GetNEtaSegments()];
     for (Int_t i = 0; i < GetNEtaSegments(); i++)
       fNextBin[i] = new UChar_t[ncells];
   }
   Int_t ncellsy = hist->GetNbinsY() + 2;
   if (!fNextRow) {
-    cout
-      << "Transformer: Allocating " << GetNEtaSegments() * ncellsy * sizeof(UChar_t) << " bytes to fNextRow" << endl;
+    cout << "Transformer: Allocating " << GetNEtaSegments() * ncellsy * sizeof(UChar_t) << " bytes to fNextRow" << endl;
     fNextRow = new UChar_t* [GetNEtaSegments()];
     for (Int_t i = 0; i < GetNEtaSegments(); i++)
       fNextRow[i] = new UChar_t[ncellsy];
   }
 
   if (!fTrackNRows) {
-    cout
-      << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fTrackNRows" << endl;
+    cout << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fTrackNRows" << endl;
     fTrackNRows = new UChar_t[ncells];
-    cout
-      << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fTrackFirstRow" << endl;
+    cout << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fTrackFirstRow" << endl;
     fTrackFirstRow = new UChar_t[ncells];
-    cout
-      << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fTrackLastRow" << endl;
+    cout << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fTrackLastRow" << endl;
     fTrackLastRow = new UChar_t[ncells];
-    cout
-      << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fInitialGapCount" << endl;
+    cout << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fInitialGapCount" << endl;
     fInitialGapCount = new UChar_t[ncells];
 
     HoughTrack track;
@@ -437,16 +427,13 @@ void HoughTransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xm
 
   if (!fStartPadParams) {
     Int_t nrows = Transform::GetLastRow(5) - Transform::GetFirstRow(0) + 1;
-    cout
-      << "Transformer: Allocating about " << nrows * 100 * sizeof(AliHLTPadHoughParams) << " bytes to fStartPadParams"
-      << endl;
+    cout << "Transformer: Allocating about " << nrows * 100 * sizeof(AliHLTPadHoughParams)
+         << " bytes to fStartPadParams" << endl;
     fStartPadParams = new AliHLTPadHoughParams* [nrows];
-    cout
-      << "Transformer: Allocating about " << nrows * 100 * sizeof(AliHLTPadHoughParams) << " bytes to fEndPadParams"
-      << endl;
+    cout << "Transformer: Allocating about " << nrows * 100 * sizeof(AliHLTPadHoughParams) << " bytes to fEndPadParams"
+         << endl;
     fEndPadParams = new AliHLTPadHoughParams* [nrows];
-    cout
-      << "Transformer: Allocating about " << nrows * 100 * sizeof(Float_t) << " bytes to fLUTr" << endl;
+    cout << "Transformer: Allocating about " << nrows * 100 * sizeof(Float_t) << " bytes to fLUTr" << endl;
     fLUTr = new Float_t* [nrows];
 
     Float_t beta1 = fgBeta1;
@@ -552,11 +539,9 @@ void HoughTransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xm
   // create lookup table for z of the digits
   if (!fLUTforwardZ) {
     Int_t ntimebins = Transform::GetNTimeBins();
-    cout
-      << "Transformer: Allocating " << ntimebins * sizeof(Float_t) << " bytes to fLUTforwardZ" << endl;
+    cout << "Transformer: Allocating " << ntimebins * sizeof(Float_t) << " bytes to fLUTforwardZ" << endl;
     fLUTforwardZ = new Float_t[ntimebins];
-    cout
-      << "Transformer: Allocating " << ntimebins * sizeof(Float_t) << " bytes to fLUTbackwardZ" << endl;
+    cout << "Transformer: Allocating " << ntimebins * sizeof(Float_t) << " bytes to fLUTbackwardZ" << endl;
     fLUTbackwardZ = new Float_t[ntimebins];
     for (Int_t i = 0; i < ntimebins; i++) {
       Float_t z;
@@ -630,152 +615,289 @@ Double_t HoughTransformerRow::GetEta(Int_t etaindex, Int_t /*slice*/) const
 void HoughTransformerRow::TransformCircle()
 {
   // This method contains the hough transformation. It reads as an input the preloaded array with digits
+  // TransformCircleFromDigitArray();
   TransformCircleFromDigitArray();
 }
 
+// Do the Hough Transform reading the data from the HLT binary file
 void HoughTransformerRow::TransformCircleFromDigitArray()
-{ /*
-   //Do the Hough Transform
+{
+  // Load the parameters used by the fast calculation of eta
+  Double_t etaparam1 = GetEtaCalcParam1();
+  Double_t etaparam2 = GetEtaCalcParam2();
+  Double_t etaparam3 = GetEtaCalcParam3();
 
-   //Load the parameters used by the fast calculation of eta
-   Double_t etaparam1 = GetEtaCalcParam1();
-   Double_t etaparam2 = GetEtaCalcParam2();
-   Double_t etaparam3 = GetEtaCalcParam3();
+  Int_t netasegments = GetNEtaSegments();
+  Double_t etamin = GetEtaMin();
+  Double_t etaslice = (GetEtaMax() - etamin) / netasegments;
 
-   Int_t netasegments = GetNEtaSegments();
-   Double_t etamin = GetEtaMin();
-   Double_t etaslice = (GetEtaMax() - etamin)/netasegments;
+  Int_t lowerthreshold = GetLowerThreshold();
 
-   Int_t lowerthreshold = GetLowerThreshold();
+  // Assumes that all the etaslice histos are the same!
+  Accumulator* h = fParamSpace[0];
+  Int_t firstbiny = h->GetFirstYbin();
+  Int_t firstbinx = h->GetFirstXbin();
+  Int_t lastbinx = h->GetLastXbin();
+  Int_t nbinx = h->GetNbinsX() + 2;
 
-   //Assumes that all the etaslice histos are the same!
-   Accumulator *h = fParamSpace[0];
-   Int_t firstbiny = h->GetFirstYbin();
-   Int_t firstbinx = h->GetFirstXbin();
-   Int_t lastbinx = h->GetLastXbin();
-   Int_t nbinx = h->GetNbinsX()+2;
+  UChar_t lastpad;
+  Int_t lastetaindex = -1;
+  AliHLTEtaRow* etaclust = new AliHLTEtaRow[netasegments];
+/*
+  AliHLTDigitRowData* tempPt = GetDataPointer();
+  if (!tempPt) {
+    LOG(AliHLTLog::kError, "AliHLTHoughTransformer::TransformCircle", "Data") << "No input data " << endl;
+    return;
+  }
 
-   UChar_t lastpad;
-   Int_t lastetaindex=-1;
-   AliHLTEtaRow *etaclust = new AliHLTEtaRow[netasegments];
+  Int_t ipatch = GetPatch();
+  Int_t ilastpatch = GetLastPatch();
+  Int_t islice = GetSlice();
+  Float_t* lutz;
+  if (islice < 18)
+    lutz = fLUTforwardZ;
+  else
+    lutz = fLUTbackwardZ;
 
-   AliHLTDigitRowData *tempPt = GetDataPointer();
-   if(!tempPt)
-     {
-       LOG(AliHLTLog::kError,"AliHLTHoughTransformer::TransformCircle","Data")
-   <<"No input data "<<endl;
-       return;
-     }
+  // Loop over the padrows:
+  for (UChar_t i = Transform::GetFirstRow(ipatch); i <= Transform::GetLastRow(ipatch); i++) {
+    lastpad = 255;
+    // Flush eta clusters array
+    memset(etaclust, 0, netasegments * sizeof(AliHLTEtaRow));
 
-   Int_t ipatch = GetPatch();
-   Int_t ilastpatch = GetLastPatch();
-   Int_t islice = GetSlice();
-   Float_t *lutz;
-   if(islice < 18)
-     lutz = fLUTforwardZ;
-   else
-     lutz = fLUTbackwardZ;
+    Float_t radius = 0;
 
-   //Loop over the padrows:
-   for(UChar_t i=Transform::GetFirstRow(ipatch); i<=Transform::GetLastRow(ipatch); i++)
-     {
-       lastpad = 255;
-       //Flush eta clusters array
-       memset(etaclust,0,netasegments*sizeof(AliHLTEtaRow));
+    // Get the data on this padrow:
+    AliHLTDigitData* digPt = tempPt->fDigitData;
+    if ((Int_t)i != (Int_t)tempPt->fRow) {
+      cout << "AliHLTHoughTransform::TransformCircle : Mismatching padrow numbering " << (Int_t)i << " "
+           << (Int_t)tempPt->fRow << endl;
+      continue;
+    }
+    //      cout<<" Starting row "<<i<<endl;
+    // Loop over the data on this padrow:
+    for (UInt_t j = 0; j < tempPt->fNDigit; j++) {
+      UShort_t charge = digPt[j].fCharge;
+      if ((Int_t)charge <= lowerthreshold)
+        continue;
+      UChar_t pad = digPt[j].fPad;
+      UShort_t time = digPt[j].fTime;
 
-       Float_t radius=0;
+      if (pad != lastpad) {
+        radius = fLUTr[(Int_t)i][(Int_t)pad];
+        lastetaindex = -1;
+      }
 
-       //Get the data on this padrow:
-       AliHLTDigitData *digPt = tempPt->fDigitData;
-       if((Int_t)i != (Int_t)tempPt->fRow)
-   {
-     LOG(AliHLTLog::kError,"HoughTransformerRow::TransformCircle","Data")
-       <<"AliHLTHoughTransform::TransformCircle : Mismatching padrow numbering "<<(Int_t)i<<"
- "<<(Int_t)tempPt->fRow<<endl;
-     continue;
-   }
-       //      cout<<" Starting row "<<i<<endl;
-       //Loop over the data on this padrow:
-       for(UInt_t j=0; j<tempPt->fNDigit; j++)
-   {
-     UShort_t charge = digPt[j].fCharge;
-     if((Int_t)charge <= lowerthreshold)
-       continue;
-     UChar_t pad = digPt[j].fPad;
-     UShort_t time = digPt[j].fTime;
+      Float_t z = lutz[(Int_t)time];
+      Double_t radiuscorr = radius * (1. + etaparam3 * radius * radius);
+      Double_t zovr = z / radiuscorr;
+      Double_t eta = (etaparam1 - etaparam2 * fabs(zovr)) * zovr;
+      // Get the corresponding index, which determines which histogram to fill:
+      Int_t etaindex = (Int_t)((eta - etamin) / etaslice);
 
-     if(pad != lastpad)
-       {
-         radius = fLUTr[(Int_t)i][(Int_t)pad];
-         lastetaindex = -1;
-       }
+#ifndef do_mc
+      if (etaindex == lastetaindex)
+        continue;
+#endif
+      cout << " Digit at patch " << ipatch << " row " << i << " pad " << (Int_t)pad << " time " << time << " etaslice "
+           << etaindex << endl;
 
-     Float_t z = lutz[(Int_t)time];
-     Double_t radiuscorr = radius*(1.+etaparam3*radius*radius);
-     Double_t zovr = z/radiuscorr;
-     Double_t eta = (etaparam1-etaparam2*fabs(zovr))*zovr;
-     //Get the corresponding index, which determines which histogram to fill:
-     Int_t etaindex = (Int_t)((eta-etamin)/etaslice);
+      if (etaindex < 0 || etaindex >= netasegments)
+        continue;
 
- #ifndef do_mc
-     if(etaindex == lastetaindex) continue;
- #endif
-     //	  cout<<" Digit at patch "<<ipatch<<" row "<<i<<" pad "<<(Int_t)pad<<" time "<<time<<" etaslice
- "<<etaindex<<endl;
+      if (!etaclust[etaindex].fIsFound) {
+        etaclust[etaindex].fStartPad = pad;
+        etaclust[etaindex].fEndPad = pad;
+        etaclust[etaindex].fIsFound = 1;
+#ifdef do_mc
+        FillClusterMCLabels(digPt[j], &etaclust[etaindex]);
+#endif
+        continue;
+      } else {
+        if (pad <= (etaclust[etaindex].fEndPad + 1)) {
+          etaclust[etaindex].fEndPad = pad;
+#ifdef do_mc
+          FillClusterMCLabels(digPt[j], &etaclust[etaindex]);
+#endif
+        } else {
+          FillCluster(i, etaindex, etaclust, ilastpatch, firstbinx, lastbinx, nbinx, firstbiny);
 
-     if(etaindex < 0 || etaindex >= netasegments)
-       continue;
+          etaclust[etaindex].fStartPad = pad;
+          etaclust[etaindex].fEndPad = pad;
 
-     if(!etaclust[etaindex].fIsFound)
-       {
-         etaclust[etaindex].fStartPad = pad;
-         etaclust[etaindex].fEndPad = pad;
-         etaclust[etaindex].fIsFound = 1;
- #ifdef do_mc
-         FillClusterMCLabels(digPt[j],&etaclust[etaindex]);
- #endif
-         continue;
-       }
-     else
-       {
-         if(pad <= (etaclust[etaindex].fEndPad + 1))
-     {
-       etaclust[etaindex].fEndPad = pad;
- #ifdef do_mc
-       FillClusterMCLabels(digPt[j],&etaclust[etaindex]);
- #endif
-     }
-         else
-     {
-       FillCluster(i,etaindex,etaclust,ilastpatch,firstbinx,lastbinx,nbinx,firstbiny);
+#ifdef do_mc
+          memset(etaclust[etaindex].fMcLabels, 0, MaxTrack);
+          FillClusterMCLabels(digPt[j], &etaclust[etaindex]);
+#endif
+        }
+      }
+      lastpad = pad;
+      lastetaindex = etaindex;
+    }
+    // Write remaining clusters
+    for (Int_t etaindex = 0; etaindex < netasegments; etaindex++) {
+      // Check for empty row
+      if ((etaclust[etaindex].fStartPad == 0) && (etaclust[etaindex].fEndPad == 0))
+        continue;
 
-       etaclust[etaindex].fStartPad = pad;
-       etaclust[etaindex].fEndPad = pad;
+      FillCluster(i, etaindex, etaclust, ilastpatch, firstbinx, lastbinx, nbinx, firstbiny);
+    }
 
- #ifdef do_mc
-       memset(etaclust[etaindex].fMcLabels,0,MaxTrack);
-       FillClusterMCLabels(digPt[j],&etaclust[etaindex]);
- #endif
-     }
-       }
-     lastpad = pad;
-     lastetaindex = etaindex;
-   }
-       //Write remaining clusters
-       for(Int_t etaindex = 0;etaindex < netasegments;etaindex++)
-   {
-     //Check for empty row
-     if((etaclust[etaindex].fStartPad == 0) && (etaclust[etaindex].fEndPad == 0)) continue;
+    // Move the data pointer to the next padrow:
+    AliHLTMemHandler::UpdateRowPointer(tempPt);
+  }
 
-     FillCluster(i,etaindex,etaclust,ilastpatch,firstbinx,lastbinx,nbinx,firstbiny);
-   }
-
-       //Move the data pointer to the next padrow:
-       AliHLTMemHandler::UpdateRowPointer(tempPt);
-     }
-
-   delete [] etaclust; */
+  delete[] etaclust;
+  */
 }
+
+/*
+void HoughTransformerRow::TransformCircleFromRawStream()
+{
+  // Do the Hough Transform
+
+  // Load the parameters used by the fast calculation of eta
+  Double_t etaparam1 = GetEtaCalcParam1();
+  Double_t etaparam2 = GetEtaCalcParam2();
+  Double_t etaparam3 = GetEtaCalcParam3();
+
+  Int_t netasegments = GetNEtaSegments();
+  Double_t etamin = GetEtaMin();
+  Double_t etaslice = (GetEtaMax() - etamin) / netasegments;
+
+  Int_t lowerthreshold = GetLowerThreshold();
+
+  // Assumes that all the etaslice histos are the same!
+  Accumulator* h = fParamSpace[0];
+  Int_t firstbiny = h->GetFirstYbin();
+  Int_t firstbinx = h->GetFirstXbin();
+  Int_t lastbinx = h->GetLastXbin();
+  Int_t nbinx = h->GetNbinsX() + 2;
+
+  Int_t lastetaindex = -1;
+  AliHLTEtaRow* etaclust = new AliHLTEtaRow[netasegments];
+
+  if (!fTPCRawStream) {
+    cerr << "No input data " << endl;
+    return;
+  }
+
+  Int_t ipatch = GetPatch();
+  UChar_t rowmin = AliceO2::Hough::Transform::GetFirstRowOnDDL(ipatch);
+  UChar_t rowmax = AliceO2::Hough::Transform::GetLastRowOnDDL(ipatch);
+  //  Int_t ntimebins = AliHLTTransform::GetNTimeBins();
+  Int_t ilastpatch = GetLastPatch();
+  Int_t islice = GetSlice();
+  Float_t* lutz;
+  if (islice < 18)
+    lutz = fLUTforwardZ;
+  else
+    lutz = fLUTbackwardZ;
+
+  // Flush eta clusters array
+  memset(etaclust, 0, netasegments * sizeof(AliHLTEtaRow));
+
+  UChar_t i = 0;
+  Int_t npads = 0;
+  Float_t radius = 0;
+  UChar_t pad = 0;
+
+  // Loop over the rawdata:
+  while (fTPCRawStream->Next()) {
+
+    if (fTPCRawStream->IsNewSector() || fTPCRawStream->IsNewRow()) {
+
+      // Write remaining clusters
+      for (Int_t etaindex = 0; etaindex < netasegments; etaindex++) {
+        // Check for empty row
+        if ((etaclust[etaindex].fStartPad == 0) && (etaclust[etaindex].fEndPad == 0))
+          continue;
+
+        FillCluster(i, etaindex, etaclust, ilastpatch, firstbinx, lastbinx, nbinx, firstbiny);
+      }
+
+      Int_t sector = fTPCRawStream->GetSector();
+      Int_t row = fTPCRawStream->GetRow();
+      Int_t slice, srow;
+      AliceO2::Hough::Transform::Sector2Slice(slice, srow, sector, row);
+      if (slice != islice) {
+        cerr << "Found slice " << slice << ", expected " << islice << endl;
+        continue;
+      }
+
+      i = (UChar_t)srow;
+      npads = AliceO2::Hough::Transform::GetNPads(srow) - 1;
+
+      // Flush eta clusters array
+      memset(etaclust, 0, netasegments * sizeof(AliHLTEtaRow));
+
+      radius = 0;
+    }
+
+    if ((i < rowmin) || (i > rowmax))
+      continue;
+
+    //    cout<<" Starting row "<<(UInt_t)i<<endl;
+    // Loop over the data on this padrow:
+    if (fTPCRawStream->IsNewRow() || fTPCRawStream->IsNewPad()) {
+      pad = fTPCRawStream->GetPad();
+
+      radius = fLUTr[(Int_t)i][(Int_t)pad];
+      lastetaindex = -1;
+    }
+
+    UShort_t time = fTPCRawStream->GetTime();
+
+    if (fTPCRawStream->GetSignal() <= lowerthreshold)
+      continue;
+
+    Float_t z = lutz[(Int_t)time];
+    Double_t radiuscorr = radius * (1. + etaparam3 * radius * radius);
+    Double_t zovr = z / radiuscorr;
+    Double_t eta = (etaparam1 - etaparam2 * fabs(zovr)) * zovr;
+    // Get the corresponding index, which determines which histogram to fill:
+    Int_t etaindex = (Int_t)((eta - etamin) / etaslice);
+
+#ifndef do_mc
+    if (etaindex == lastetaindex)
+      continue;
+#endif
+    //    cout<<" Digit at patch "<<ipatch<<" row "<<i<<" pad "<<(Int_t)pad<<" time "<<time<<" etaslice
+    //    "<<etaindex<<endl;
+
+    if (etaindex < 0 || etaindex >= netasegments)
+      continue;
+
+    if (!etaclust[etaindex].fIsFound) {
+      etaclust[etaindex].fStartPad = pad;
+      etaclust[etaindex].fEndPad = pad;
+      etaclust[etaindex].fIsFound = 1;
+      continue;
+    } else {
+      if (pad <= (etaclust[etaindex].fEndPad + 1)) {
+        etaclust[etaindex].fEndPad = pad;
+      } else {
+        FillCluster(i, etaindex, etaclust, ilastpatch, firstbinx, lastbinx, nbinx, firstbiny);
+
+        etaclust[etaindex].fStartPad = pad;
+        etaclust[etaindex].fEndPad = pad;
+      }
+    }
+    lastetaindex = etaindex;
+  }
+
+  // Write remaining clusters
+  for (Int_t etaindex = 0; etaindex < netasegments; etaindex++) {
+    // Check for empty row
+    if ((etaclust[etaindex].fStartPad == 0) && (etaclust[etaindex].fEndPad == 0))
+      continue;
+
+    FillCluster(i, etaindex, etaclust, ilastpatch, firstbinx, lastbinx, nbinx, firstbiny);
+  }
+
+  delete[] etaclust;
+}
+*/
 
 #ifndef do_mc
 Int_t HoughTransformerRow::GetTrackID(Int_t /*etaindex*/, Double_t /*alpha1*/, Double_t /*alpha2*/) const
@@ -794,8 +916,7 @@ Int_t HoughTransformerRow::GetTrackID(Int_t etaindex, Double_t alpha1, Double_t 
   Accumulator* hist = fParamSpace[etaindex];
   Int_t bin = hist->FindLabelBin(alpha1, alpha2);
   if (bin == -1) {
-    cout
-      << "Track candidate outside Hough space boundaries: " << alpha1 << " " << alpha2 << endl;
+    cout << "Track candidate outside Hough space boundaries: " << alpha1 << " " << alpha2 << endl;
     return -1;
   }
   Int_t label = -1;
@@ -823,11 +944,10 @@ Int_t HoughTransformerRow::GetTrackID(Int_t etaindex, Double_t alpha1, Double_t 
     }
   }
   if (max2 != 0) {
-    cout
-      << " TrackID"
-      << " label " << label << " max " << max << " label2 " << label2 << " max2 " << max2 << " "
-      << (Float_t)max2 / (Float_t)max << " " << fTrackID[etaindex][bin].fLabel[MaxTrack - 1] << " "
-      << (Int_t)fTrackID[etaindex][bin].fNHits[MaxTrack - 1] << endl;
+    cout << " TrackID"
+         << " label " << label << " max " << max << " label2 " << label2 << " max2 " << max2 << " "
+         << (Float_t)max2 / (Float_t)max << " " << fTrackID[etaindex][bin].fLabel[MaxTrack - 1] << " "
+         << (Int_t)fTrackID[etaindex][bin].fNHits[MaxTrack - 1] << endl;
   }
   return label;
 #endif
@@ -840,8 +960,7 @@ Int_t HoughTransformerRow::GetTrackLength(Double_t alpha1, Double_t alpha2, Int_
   Accumulator* hist = fParamSpace[0];
   Int_t bin = hist->FindBin(alpha1, alpha2);
   if (bin == -1) {
-    cout
-      << "Track candidate outside Hough space boundaries: " << alpha1 << " " << alpha2 << endl;
+    cout << "Track candidate outside Hough space boundaries: " << alpha1 << " " << alpha2 << endl;
     return -1;
   }
   rows[0] = fTrackFirstRow[bin];
@@ -947,9 +1066,8 @@ inline void HoughTransformerRow::FillCluster(UChar_t i, Int_t etaindex, AliHLTEt
         binx2 = lastbinx;
 #ifdef do_mc
       if (binx2 < binx1) {
-        cout
-          << "Wrong filling " << binx1 << " " << binx2 << " " << i << " " << etaclust[etaindex].fStartPad << " "
-          << etaclust[etaindex].fEndPad << endl;
+        cout << "Wrong filling " << binx1 << " " << binx2 << " " << i << " " << etaclust[etaindex].fStartPad << " "
+             << etaclust[etaindex].fEndPad << endl;
       }
 #endif
       Int_t tempbin = b * nbinx;
@@ -981,9 +1099,8 @@ inline void HoughTransformerRow::FillCluster(UChar_t i, Int_t etaindex, AliHLTEt
         binx2 = lastbinx;
 #ifdef do_mc
       if (binx2 < binx1) {
-        cout
-          << "Wrong filling " << binx1 << " " << binx2 << " " << i << " " << etaclust[etaindex].fStartPad << " "
-          << etaclust[etaindex].fEndPad << endl;
+        cout << "Wrong filling " << binx1 << " " << binx2 << " " << i << " " << etaclust[etaindex].fStartPad << " "
+             << etaclust[etaindex].fEndPad << endl;
       }
 #endif
       if (nextrow[b] > b) {

@@ -17,8 +17,8 @@ namespace Hough {
 #ifdef do_mc
 const UInt_t MaxTrack = 120;
 struct AliHLTTrackIndex {
-  Int_t fLabel[MaxTrack]; // MC label
-  UChar_t fNHits[MaxTrack]; // Number of different mc labels
+  Int_t fLabel[MaxTrack];        // MC label
+  UChar_t fNHits[MaxTrack];      // Number of different mc labels
   UChar_t fCurrentRow[MaxTrack]; // Index of the current row while filling Hough space
 };
 typedef struct AliHLTTrackIndex AliHLTTrackIndex;
@@ -112,12 +112,12 @@ private:
   HoughBaseTransformer(const HoughBaseTransformer&);
   HoughBaseTransformer& operator=(const HoughBaseTransformer&);
 
-  Int_t fSlice; // Index of the current slice being processed
-  Int_t fPatch; // Index of the current patch being processed
-  Int_t fLastPatch; // Index of the last processed patch
-  Int_t fNEtaSegments; // Number of eta slices
-  Double_t fEtaMin; // Minimum allowed eta
-  Double_t fEtaMax; // Maximum allowed eta
+  Int_t fSlice;          // Index of the current slice being processed
+  Int_t fPatch;          // Index of the current patch being processed
+  Int_t fLastPatch;      // Index of the last processed patch
+  Int_t fNEtaSegments;   // Number of eta slices
+  Double_t fEtaMin;      // Minimum allowed eta
+  Double_t fEtaMax;      // Maximum allowed eta
   Int_t fLowerThreshold; // Lower threshold for digits amplitude
   Int_t fUpperThreshold; // Upper threshold for digits amplitude
 

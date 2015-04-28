@@ -16,6 +16,7 @@
 #include "boost/filesystem.hpp"
 
 #include "Accumulator.h"
+#include "HoughTransformerRow.h"
 
 // FIXME: convert float into double for bigger precision
 // Information for each stored cluster
@@ -153,7 +154,7 @@ houghPadParameters** fEndPadParameters;
 // resoution of rResolution = 10, they will cause bin(186,48) and bin(192,48) to increase respectively. Now rResolution
 // = 100 means that there will be 100 bins for r: 0 - 99. Converting r -> rBin and rBin -> r is done by methods
 // getRValue and getRBinValue
-int rResolution = 100000;
+int rResolution = 10000;
 
 // sin and cos expect values in radians instead of degrees
 #define DEG2RAD 0.017453293f

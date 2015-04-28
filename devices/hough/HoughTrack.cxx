@@ -192,8 +192,7 @@ void HoughTrack::SetTrackParametersRow(double alpha1, double alpha2, double eta,
 {
   // Set track parameters for HoughTransformerRow
   // This includes curvature,emission angle and eta
-  double psi =
-    atan((alpha1 - alpha2) / (HoughTransformerRow::GetBeta1() - HoughTransformerRow::GetBeta2()));
+  double psi = atan((alpha1 - alpha2) / (HoughTransformerRow::GetBeta1() - HoughTransformerRow::GetBeta2()));
   double kappa = 2.0 * (alpha1 * cos(psi) - HoughTransformerRow::GetBeta1() * sin(psi));
   SetTrackParameters(kappa, psi, weight);
 
