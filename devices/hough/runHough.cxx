@@ -681,11 +681,11 @@ int processData(std::string dataPath, std::string dataType, std::string dataOrig
   // Add the AliHLTComponentBlockData object to AliHLTTPCSpacePointContainer
   int numberOfClusters = spacepoints->AddInputBlock(&bd);
 
-  //cout << "ID" << setw(8) << "fX" << setw(8) << "fY" << setw(8) << "fZ" << setw(9) << "Pad Row" << setw(10)
+  // cout << "ID" << setw(8) << "fX" << setw(8) << "fY" << setw(8) << "fZ" << setw(9) << "Pad Row" << setw(10)
   //     << "SigmaY2" << setw(10) << "SigmaZ2" << setw(7) << "Charge" << setw(7) << "QMax" << setw(10) << "Track Id"
   //     << setw(7) << "MC Id" << setw(7) << "Used" << endl;
 
-  //cout << *spacepoints << endl;
+  // cout << *spacepoints << endl;
 
   // Retrieve the cluster information from AliHLTTPCSpacePointContainer
   std::vector<AliHLTUInt32_t> clusterIDs;
@@ -696,8 +696,8 @@ int processData(std::string dataPath, std::string dataType, std::string dataOrig
     AliHLTUInt32_t clusterID = *element;
 
     setClusterParameters(clusterID, spacepoints->GetX(clusterID), spacepoints->GetY(clusterID),
-                         spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID), currentSlice,
-                         currentPartition);
+                         spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID),
+                         spacepoints->GetPadRow(clusterID), currentSlice, currentPartition);
   }
 
   // De-allocate memory space

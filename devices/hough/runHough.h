@@ -30,6 +30,8 @@ struct clusterDataFormat {
   UInt_t mTPCSlice;
   UInt_t mTPCPartition;
 
+  UChar_t mPadRow;
+
   Double_t mX;
   Double_t mY;
   Double_t mZ;
@@ -205,14 +207,16 @@ void setTrackParameters(UInt_t etaSlice, Float_t alpha1, Float_t beta1, Float_t 
 }
 
 UInt_t getClusterID(int clusterNumber) { return clusterData[clusterNumber].mID; }
+UInt_t getClusterCharge(int clusterNumber) { return clusterData[clusterNumber].mCharge; }
+
 UInt_t getClusterSlice(int clusterNumber) { return clusterData[clusterNumber].mTPCSlice; }
 UInt_t getClusterPartition(int clusterNumber) { return clusterData[clusterNumber].mTPCPartition; }
+
+UChar_t getClusterPadRow(int clusterNumber) { return clusterData[clusterNumber].mPadRow; }
 
 Double_t getClusterX(int clusterNumber) { return clusterData[clusterNumber].mX; }
 Double_t getClusterY(int clusterNumber) { return clusterData[clusterNumber].mY; }
 Double_t getClusterZ(int clusterNumber) { return clusterData[clusterNumber].mZ; }
-
-UInt_t getClusterCharge(int clusterNumber) { return clusterData[clusterNumber].mCharge; }
 
 Double_t getClusterAlpha(int clusterNumber) { return clusterData[clusterNumber].mAlpha; }
 Double_t getClusterBeta(int clusterNumber) { return clusterData[clusterNumber].mBeta; }
@@ -224,17 +228,19 @@ void setClusterBeta(int clusterNumber, Double_t beta) { clusterData[clusterNumbe
 void setClusterEta(int clusterNumber, Double_t eta) { clusterData[clusterNumber].mEta = eta; }
 void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice) { clusterData[clusterNumber].mEtaSlice = etaSlice; }
 
-void setClusterParameters(UInt_t clusterID, Double_t x, Double_t y, Double_t z, UInt_t charge, UInt_t tpcSlice,
-                          UInt_t tpcPartition)
+void setClusterParameters(UInt_t clusterID, Double_t x, Double_t y, Double_t z, UInt_t charge, UChar_t padRow,
+                          UInt_t tpcSlice, UInt_t tpcPartition)
 {
   clusterDataFormat data;
   data.mID = clusterID;
-  data.mX = x;
-  data.mY = y;
-  data.mZ = z;
   data.mCharge = charge;
   data.mTPCSlice = tpcSlice;
   data.mTPCPartition = tpcPartition;
+  data.mPadRow = padRow;
+  data.mX = x;
+  data.mY = y;
+  data.mZ = z;
+
   clusterData.push_back(data);
 }
 
