@@ -648,7 +648,7 @@ void HoughTransformerRow::TransformCircleFromDigitArray()
   if (!tempPt) {
     LOG(AliHLTLog::kError, "AliHLTHoughTransformer::TransformCircle", "Data") << "No input data " << endl;
     return;
-  }
+  }*/
 
   Int_t ipatch = GetPatch();
   Int_t ilastpatch = GetLastPatch();
@@ -666,7 +666,7 @@ void HoughTransformerRow::TransformCircleFromDigitArray()
     memset(etaclust, 0, netasegments * sizeof(AliHLTEtaRow));
 
     Float_t radius = 0;
-
+/*
     // Get the data on this padrow:
     AliHLTDigitData* digPt = tempPt->fDigitData;
     if ((Int_t)i != (Int_t)tempPt->fRow) {
@@ -745,10 +745,11 @@ void HoughTransformerRow::TransformCircleFromDigitArray()
 
     // Move the data pointer to the next padrow:
     AliHLTMemHandler::UpdateRowPointer(tempPt);
+    */
   }
 
   delete[] etaclust;
-  */
+
 }
 
 /*
