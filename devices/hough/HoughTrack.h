@@ -1,8 +1,8 @@
 #ifndef ALICEO2_HOUGH_HOUGHTRACK_H_
 #define ALICEO2_HOUGH_HOUGHTRACK_H_
 
-#include "AliHLTStandardIncludes.h"
-#include "HoughTransformerRow.h"
+#include "StandardIncludes.h"
+#include "TransformerRow.h"
 #include "Track.h"
 #include "Transform.h"
 
@@ -43,10 +43,12 @@ public:
   void SetEta(double f);
   void SetWeight(int i, bool update = false)
   {
-    if (update)
+    if (update) {
       fWeight += i;
-    else
+    }
+    else {
       fWeight = i;
+    }
   }
   void SetEtaIndex(int f) { fEtaIndex = f; }
   void SetBestMCid(int f, double mindist);
@@ -62,21 +64,20 @@ public:
   }
 
 private:
-  double fMinDist; // Minimum distance to a generated track while associating mc label
-  int fWeight;     // Track weight
-  int fEtaIndex;   // Eta slice index
-  double fEta;     // Track Eta
-  int fSlice;      // The slice where this track was found
+  double fMinDist; ///< Minimum distance to a generated track while associating mc label
+  int fWeight;     ///< Track weight
+  int fEtaIndex;   ///< Eta slice index
+  double fEta;     ///< Track Eta
+  int fSlice;      ///< The slice where this track was found
 
-  double fDLine;   //??
-  double fPsiLine; //??
+  double fDLine;   ///< ??
+  double fPsiLine; ///< ??
 
-  bool fIsHelix; // Is the track helix or not?
+  bool fIsHelix; ///< Is the track helix or not?
 
-  float fBinX, fBinY, fSizeX, fSizeY; // Size and position of the hough space peak
+  float fBinX, fBinY, fSizeX, fSizeY; ///< Size and position of the hough space peak
 };
 
-typedef HoughTrack AliL3HoughTrack; // for backward comaptibility
 }
 }
 

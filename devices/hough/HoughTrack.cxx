@@ -9,8 +9,6 @@ using namespace AliceO2::Hough;
 
 HoughTrack::HoughTrack() : Track()
 {
-  // Constructor
-
   fWeight = 0;
   fMinDist = 0;
   fDLine = 0;
@@ -23,7 +21,6 @@ HoughTrack::HoughTrack() : Track()
 
 HoughTrack::~HoughTrack()
 {
-  // dtor
 }
 
 void HoughTrack::Set(Track* track)
@@ -190,15 +187,15 @@ void HoughTrack::SetTrackParameters(double kappa, double eangle, int weight)
 
 void HoughTrack::SetTrackParametersRow(double alpha1, double alpha2, double eta, int weight)
 {
-  // Set track parameters for HoughTransformerRow
+  // Set track parameters for TransformerRow
   // This includes curvature,emission angle and eta
-  double psi = atan((alpha1 - alpha2) / (HoughTransformerRow::GetBeta1() - HoughTransformerRow::GetBeta2()));
-  double kappa = 2.0 * (alpha1 * cos(psi) - HoughTransformerRow::GetBeta1() * sin(psi));
+  double psi = atan((alpha1 - alpha2) / (TransformerRow::GetBeta1() - TransformerRow::GetBeta2()));
+  double kappa = 2.0 * (alpha1 * cos(psi) - TransformerRow::GetBeta1() * sin(psi));
   SetTrackParameters(kappa, psi, weight);
 
   double zovr;
-  double etaparam1 = HoughTransformerRow::GetEtaCalcParam1();
-  double etaparam2 = HoughTransformerRow::GetEtaCalcParam2();
+  double etaparam1 = TransformerRow::GetEtaCalcParam1();
+  double etaparam2 = TransformerRow::GetEtaCalcParam2();
   if (eta > 0)
     zovr = (etaparam1 - sqrt(etaparam1 * etaparam1 - 4. * etaparam2 * eta)) / (2. * etaparam2);
   else

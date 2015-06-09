@@ -3,20 +3,14 @@
 // Author: Anders Vestbo <mailto:vestbo$fi.uib.no>, Uli Frankenfeld <mailto:franken@fi.uib.no>
 //*-- Copyright &copy ALICE HLT Group
 
-#include "AliHLTStandardIncludes.h"
+#include "StandardIncludes.h"
 #include "Track.h"
 #include "Transform.h"
-/*#include "AliHLTVertex.h"
-#include "AliHLTSpacePointData.h"
-*/
 
-#if __GNUC__ >= 3
 using namespace std;
-#endif
 
 Track::Track()
 {
-  // Constructor
   fNHits = 0;
   fMCid = -1;
   fKappa = 0;
@@ -51,7 +45,6 @@ Track::Track()
 
 void Track::Set(Track* tpt)
 {
-  // setter
   SetRowRange(tpt->GetFirstRow(), tpt->GetLastRow());
   SetPhi0(tpt->GetPhi0());
   SetKappa(tpt->GetKappa());
@@ -75,26 +68,20 @@ void Track::Set(Track* tpt)
 
 int Track::Compare(const Track* track) const
 {
-  // compare tracks
-  if (track->GetNHits() < GetNHits())
+  if (track->GetNHits() < GetNHits()) {
     return 1;
-  if (track->GetNHits() > GetNHits())
+  }
+  if (track->GetNHits() > GetNHits()) {
     return -1;
+  }
   return 0;
 }
 
-Track::~Track()
-{
-  // Nothing to do
-}
+Track::~Track() {}
 
-double Track::GetP() const
-{
-  // Returns total momentum.
-  return fabs(GetPt()) * sqrt(1. + GetTgl() * GetTgl());
-}
+double Track::GetP() const { return fabs(GetPt()) * sqrt(1. + GetTgl() * GetTgl()); }
 
-double Track::GetPseudoRapidity() const { /* get pseudo rap return 0.5 * log((GetP() + GetPz()) / (GetP() - GetPz()));*/ }
+double Track::GetPseudoRapidity() const { /* get pseudo rap return 0.5 * log((GetP() + GetPz()) / (GetP() - GetPz()));*/}
 
 /*
 double Track::GetEta() const
@@ -105,31 +92,28 @@ double Track::GetEta() const
 
 double Track::GetRapidity() const
 {
-  // get rap
   const double kmpi = 0.13957;
   return 0.5 * log((kmpi + GetPz()) / (kmpi - GetPz()));
 }
 
 void Track::Rotate(int slice, bool tolocal)
 {
-  // Rotate track to global parameters
-  // If flag tolocal is set, the track is rotated
-  // to local coordinates.
-
   float psi[1] = { GetPsi() };
-  if (!tolocal)
+  if (!tolocal) {
     AliceO2::Hough::Transform::Local2GlobalAngle(psi, slice);
-  else
+  } else {
     AliceO2::Hough::Transform::Global2LocalAngle(psi, slice);
+  }
   SetPsi(psi[0]);
   float first[3];
   first[0] = GetFirstPointX();
   first[1] = GetFirstPointY();
   first[2] = GetFirstPointZ();
-  if (!tolocal)
+  if (!tolocal) {
     AliceO2::Hough::Transform::Local2Global(first, slice);
-  else
+  } else {
     AliceO2::Hough::Transform::Global2LocHLT(first, slice);
+  }
   // AliceO2::Hough::Transform::Global2Local(first,slice,true);
 
   SetFirstPoint(first[0], first[1], first[2]);
@@ -137,18 +121,20 @@ void Track::Rotate(int slice, bool tolocal)
   last[0] = GetLastPointX();
   last[1] = GetLastPointY();
   last[2] = GetLastPointZ();
-  if (!tolocal)
+  if (!tolocal) {
     AliceO2::Hough::Transform::Local2Global(last, slice);
-  else
+  } else {
     AliceO2::Hough::Transform::Global2LocHLT(last, slice);
+  }
   // AliceO2::Hough::Transform::Global2Local(last,slice,true);
   SetLastPoint(last[0], last[1], last[2]);
 
   float center[3] = { GetCenterX(), GetCenterY(), 0 };
-  if (!tolocal)
+  if (!tolocal) {
     AliceO2::Hough::Transform::Local2Global(center, slice);
-  else
+  } else {
     AliceO2::Hough::Transform::Global2LocHLT(center, slice);
+  }
   // AliceO2::Hough::Transform::Global2Local(center,slice,true);
   SetCenterX(center[0]);
   SetCenterY(center[1]);
@@ -156,20 +142,21 @@ void Track::Rotate(int slice, bool tolocal)
   SetPhi0(atan2(fFirstPoint[1], fFirstPoint[0]));
   SetR0(sqrt(fFirstPoint[0] * fFirstPoint[0] + fFirstPoint[1] * fFirstPoint[1]));
 
-  if (!tolocal)
+  if (!tolocal) {
     fIsLocal = false;
-  else
+  } else {
     fIsLocal = true;
+  }
 }
 
 void Track::CalculateHelix()
 {
-  // Calculate Radius, CenterX and CenterY from Psi, X0, Y0
   fRadius = fPt / (AliceO2::Hough::Transform::GetBFieldValue());
-  if (fRadius)
+  if (fRadius) {
     fKappa = -fQ * 1. / fRadius;
-  else
+  } else {
     fRadius = 999999; // just zero
+  }
   double trackPhi0 = fPsi + fQ * AliceO2::Hough::Transform::PiHalf();
 
   fCenterX = fFirstPoint[0] - fRadius * cos(trackPhi0);
@@ -181,22 +168,17 @@ void Track::CalculateHelix()
 
 double Track::GetCrossingAngle(int padrow, int slice)
 {
-  // Calculate the crossing angle between track and given padrow.
-  // Take the dot product of the tangent vector of the track, and
-  // vector perpendicular to the padrow.
-  // In order to do this, we need the tangent vector to the track at the
-  // point. This is done by rotating the radius vector by 90 degrees;
-  // rotation matrix: (  0  1 )
-  //                 ( -1  0 )
+  // Angle perpendicular to the padrow in local coordinates
+  float angle = 0;
 
-  float angle = 0; // Angle perpendicular to the padrow in local coordinates
-  if (slice >= 0) // Global coordinates
-  {
+  // If slice >=0 Global coordinates
+  // else it should be in local coordinates
+  if (slice >= 0) {
     AliceO2::Hough::Transform::Local2GlobalAngle(&angle, slice);
-    if (!CalculateReferencePoint(angle, AliceO2::Hough::Transform::Row2X(padrow)))
+    if (!CalculateReferencePoint(angle, AliceO2::Hough::Transform::Row2X(padrow))) {
       cerr << "Track::GetCrossingAngle : Track does not cross line in slice " << slice << " row " << padrow << endl;
-  } else // should be in local coordinates
-  {
+    }
+  } else {
     float xyz[3];
     GetCrossingPoint(padrow, xyz);
     fPoint[0] = xyz[0];
@@ -211,15 +193,14 @@ double Track::GetCrossingAngle(int padrow, int slice)
 
   double perppadrow[2] = { cos(angle), sin(angle) };
   double cosbeta = fabs(tangent[0] * perppadrow[0] + tangent[1] * perppadrow[1]);
-  if (cosbeta > 1)
+  if (cosbeta > 1) {
     cosbeta = 1;
+  }
   return acos(cosbeta);
 }
 
 bool Track::GetCrossingPoint(int padrow, float* xyz)
 {
-  // Assumes the track is given in local coordinates
-
   if (!IsLocal()) {
     cerr << "GetCrossingPoint: Track is given on global coordinates" << endl;
     return false;
@@ -230,27 +211,32 @@ bool Track::GetCrossingPoint(int padrow, float* xyz)
   xyz[0] = xHit;
   double aa = (xHit - GetCenterX()) * (xHit - GetCenterX());
   double r2 = GetRadius() * GetRadius();
-  if (aa > r2)
+  if (aa > r2) {
     return false;
+  }
 
   double aa2 = sqrt(r2 - aa);
   double y1 = GetCenterY() + aa2;
   double y2 = GetCenterY() - aa2;
   xyz[1] = y1;
-  if (fabs(y2) < fabs(y1))
+  if (fabs(y2) < fabs(y1)) {
     xyz[1] = y2;
+  }
 
   double yHit = xyz[1];
   double angle1 = atan2((yHit - GetCenterY()), (xHit - GetCenterX()));
-  if (angle1 < 0)
+  if (angle1 < 0) {
     angle1 += 2. * AliceO2::Hough::Transform::Pi();
+  }
   double angle2 = atan2((GetFirstPointY() - GetCenterY()), (GetFirstPointX() - GetCenterX()));
-  if (angle2 < 0)
+  if (angle2 < 0) {
     angle2 += AliceO2::Hough::Transform::TwoPi();
+  }
   double diffangle = angle1 - angle2;
   diffangle = fmod(diffangle, AliceO2::Hough::Transform::TwoPi());
-  if ((GetCharge() * diffangle) > 0)
+  if ((GetCharge() * diffangle) > 0) {
     diffangle = diffangle - GetCharge() * AliceO2::Hough::Transform::TwoPi();
+  }
   double stot = fabs(diffangle) * GetRadius();
   double zHit = GetFirstPointZ() + stot * GetTgl();
   xyz[2] = zHit;
@@ -318,7 +304,7 @@ bool Track::CalculateEdgePoint(double angle)
   // Global coordinate: crossing point with y = ax; a=tan(angle);
   //
   double rmin = AliceO2::Hough::Transform::Row2X(AliceO2::Hough::Transform::GetFirstRow(-1)); // min Radius of TPC
-  double rmax = AliceO2::Hough::Transform::Row2X(AliceO2::Hough::Transform::GetLastRow(-1)); // max Radius of TPC
+  double rmax = AliceO2::Hough::Transform::Row2X(AliceO2::Hough::Transform::GetLastRow(-1));  // max Radius of TPC
 
   double a = tan(angle);
   double pp = (fCenterX + a * fCenterY) / (1 + pow(a, 2));

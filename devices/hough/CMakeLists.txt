@@ -20,11 +20,19 @@ link_directories(${LINK_DIRECTORIES})
 
 set(SRCS
   Accumulator.cxx
+  ClusterCollection.cxx
+  BaseTransformer.cxx
+  TransformerRow.cxx
+  HoughTrack.cxx
   Transform.cxx
   Track.cxx
-  HoughBaseTransformer.cxx
-  HoughTransformerRow.cxx
-  HoughTrack.cxx
+)
+
+#add_definitions( -Ddo_mc )
+
+set(DEPENDENCIES
+  ${DEPENDENCIES}
+   AliHLTTPC HLTbase
 )
 
 set(LIBRARY_NAME ALICEHOUGH)
@@ -47,7 +55,7 @@ ForEach(_file RANGE 0 ${_length})
   list(GET Exe_Source ${_file} _src)
   set(EXE_NAME ${_name})
   set(SRCS ${_src})
-  set(DEPENDENCIES dl Core RIO Gpad Hist AliHLTTPC HLTbase ALICEHOUGH boost_system boost_filesystem)
+  set(DEPENDENCIES dl Core RIO Gpad Hist ALICEHOUGH boost_system boost_filesystem)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
 

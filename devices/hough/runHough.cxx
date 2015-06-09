@@ -46,8 +46,8 @@ void drawAccumulatorCurves(int totalNumberOfClusters)
   TGraph* g[totalNumberOfClusters];
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    Float_t x = getClusterX(i);
-    Float_t y = getClusterY(i);
+    Float_t x = clusterCollection->getClusterX(i);
+    Float_t y = clusterCollection->getClusterY(i);
 
     g[i] = new TGraph();
 
@@ -92,8 +92,8 @@ void drawCartesianClusters1D(int etaSlice, int totalNumberOfClusters)
   TGraph* cartesianClustersGraph1D = new TGraph();
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    if (getClusterEtaSlice(i) == etaSlice) {
-      cartesianClustersGraph1D->SetPoint(i, getClusterX(i), getClusterY(i));
+    if (clusterCollection->getClusterEtaSlice(i) == etaSlice) {
+      cartesianClustersGraph1D->SetPoint(i, clusterCollection->getClusterX(i), clusterCollection->getClusterY(i));
     }
   }
 
@@ -112,8 +112,9 @@ void drawConformalMappingClusters1D(int etaSlice, int totalNumberOfClusters)
   TGraph* conformalMappingClustersGraph1D = new TGraph();
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    if (getClusterEtaSlice(i) == etaSlice) {
-      conformalMappingClustersGraph1D->SetPoint(i, getClusterAlpha(i), getClusterBeta(i));
+    if (clusterCollection->getClusterEtaSlice(i) == etaSlice) {
+      conformalMappingClustersGraph1D->SetPoint(i, clusterCollection->getClusterAlpha(i),
+                                                clusterCollection->getClusterBeta(i));
     }
   }
 
@@ -132,7 +133,8 @@ void drawCartesianClusters(int totalNumberOfClusters)
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     // cout << "graph: " << i << " " << getClusterX(i) << " " << getClusterY(i) << " " <<
     // getClusterZ(i) << " " << endl;
-    cartesianClustersGraph2D->SetPoint(i, getClusterX(i), getClusterY(i), getClusterZ(i));
+    cartesianClustersGraph2D->SetPoint(i, clusterCollection->getClusterX(i), clusterCollection->getClusterY(i),
+                                       clusterCollection->getClusterZ(i));
   }
 
   // Draw with colored dots
@@ -150,7 +152,9 @@ void drawConformalMappingClusters(int totalNumberOfClusters)
   TGraph2D* conformalMappingClustersGraph2D = new TGraph2D(totalNumberOfClusters);
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    conformalMappingClustersGraph2D->SetPoint(i, getClusterAlpha(i), getClusterBeta(i), getClusterEta(i));
+    conformalMappingClustersGraph2D->SetPoint(i, clusterCollection->getClusterAlpha(i),
+                                              clusterCollection->getClusterBeta(i),
+                                              clusterCollection->getClusterEta(i));
   }
 
   // Draw with colored dots
@@ -228,12 +232,14 @@ void trackFinding(int etaSlice)
 void calculateEta(int totalNumberOfClusters)
 {
   for (int i = 0; i < totalNumberOfClusters; i++) {
-    Double_t radial =
-      sqrt(getClusterX(i) * getClusterX(i) + getClusterY(i) * getClusterY(i) + getClusterZ(i) * getClusterZ(i));
-    Double_t eta = 0.5 * log((radial + getClusterZ(i)) / (radial - getClusterZ(i)));
+    Double_t radial = sqrt(clusterCollection->getClusterX(i) * clusterCollection->getClusterX(i) +
+                           clusterCollection->getClusterY(i) * clusterCollection->getClusterY(i) +
+                           clusterCollection->getClusterZ(i) * clusterCollection->getClusterZ(i));
+    Double_t eta =
+      0.5 * log((radial + clusterCollection->getClusterZ(i)) / (radial - clusterCollection->getClusterZ(i)));
 
     // Store eta to be later used by the conformalMapping method
-    setClusterEta(i, eta);
+    clusterCollection->setClusterEta(i, eta);
   }
 }
 
@@ -241,7 +247,7 @@ void calculateEta(int totalNumberOfClusters)
 void calculateEtaSlice(int totalNumberOfClusters)
 {
   for (int i = 0; i < totalNumberOfClusters; i++) {
-    Float_t eta = getClusterEta(i);
+    Float_t eta = clusterCollection->getClusterEta(i);
 
     if (etalphaMax - etalphaMin == 0) {
       cerr << "The minimum and maximum eta value of all clusters is identical" << endl;
@@ -250,15 +256,15 @@ void calculateEtaSlice(int totalNumberOfClusters)
 
     Double_t etaSlice = (etaResolution * (eta - etalphaMin)) / (etalphaMax - etalphaMin);
 
-    setClusterEtaSlice(i, (Int_t)etaSlice);
+    clusterCollection->setClusterEtaSlice(i, (Int_t)etaSlice);
   }
 }
 
 void conformalMapping(int totalNumberOfClusters)
 {
   for (int i = 0; i < totalNumberOfClusters; i++) {
-    Float_t x = getClusterX(i);
-    Float_t y = getClusterY(i);
+    Float_t x = clusterCollection->getClusterX(i);
+    Float_t y = clusterCollection->getClusterY(i);
 
     // Equation (2) from paper [1]
     Float_t alpha = x / (x * x + y * y);
@@ -268,8 +274,26 @@ void conformalMapping(int totalNumberOfClusters)
     // slice: " << etaSlice
     //     << endl;
 
-    setClusterAlpha(i, alpha);
-    setClusterBeta(i, beta);
+    clusterCollection->setClusterAlpha(i, alpha);
+    clusterCollection->setClusterBeta(i, beta);
+  }
+}
+
+void conformalMapping2()
+{
+  for (UInt_t padRow = 0; padRow < AliceO2::Hough::Transform::GetNRows(); padRow++) {
+    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
+         clusterNumber++) {
+      Float_t x = clusterCollection->getClusterX(padRow, clusterNumber);
+      Float_t y = clusterCollection->getClusterY(padRow, clusterNumber);
+
+      // Equation (2) from paper [1]
+      Float_t alpha = x / (x * x + y * y);
+      Float_t beta = y / (x * x + y * y);
+
+      clusterCollection->setClusterAlpha(padRow, clusterNumber, alpha);
+      clusterCollection->setClusterBeta(padRow, clusterNumber, beta);
+    }
   }
 }
 
@@ -285,8 +309,8 @@ void transformCartesian(int totalNumberOfClusters)
   accumulator.resize(2 * rMax * thetalphaMax * rResolution, 0);
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    Float_t x = getClusterX(i);
-    Float_t y = getClusterY(i);
+    Float_t x = clusterCollection->getClusterX(i);
+    Float_t y = clusterCollection->getClusterY(i);
 
     for (Int_t theta = 0; theta < thetalphaMax; theta++) {
       double r = (x * cos(theta * DEG2RAD)) + (y * sin(theta * DEG2RAD));
@@ -317,10 +341,10 @@ void transformConformalMapping(int totalNumberOfClusters)
        << etaResolution* rResolution* thetalphaMax + rResolution* thetalphaMax + thetalphaMax << endl;
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    Float_t a = getClusterAlpha(i);
-    Float_t b = getClusterBeta(i);
-    Float_t eta = getClusterEta(i);
-    UInt_t etaSlice = getClusterEtaSlice(i);
+    Float_t a = clusterCollection->getClusterAlpha(i);
+    Float_t b = clusterCollection->getClusterBeta(i);
+    Float_t eta = clusterCollection->getClusterEta(i);
+    UInt_t etaSlice = clusterCollection->getClusterEtaSlice(i);
 
     for (Int_t theta = 0; theta < thetalphaMax; theta++) {
       double r = (a * cos(theta * DEG2RAD)) + (b * sin(theta * DEG2RAD));
@@ -339,206 +363,6 @@ void transformConformalMapping(int totalNumberOfClusters)
   }
 }
 
-void fillCluster(AliceO2::Hough::Accumulator* hist, UChar_t row, Int_t etaSlice)
-{
-  UChar_t* numberOfGaps = fGapCount[etaSlice];
-  UChar_t* currentRow = fCurrentRowCount[etaSlice];
-  UChar_t* lastRow = fTrackLastRow;
-  UChar_t* previousBin = fPreviousBin[etaSlice];
-  UChar_t* nextBin = fNextBin[etaSlice];
-  UChar_t* nextRow = fNextRow[etaSlice];
-
-  Float_t beta1 = fgBeta1;
-  Float_t beta2 = fgBeta2;
-  Float_t beta1minusbeta2 = fgBeta1 - fgBeta2;
-  Float_t ymin = hist->GetYmin();
-  Float_t histbin = hist->GetBinWidthY();
-  Float_t xmin = hist->GetXmin();
-  Float_t xmax = hist->GetXmax();
-  Float_t xbin = (xmax - xmin) / hist->GetNbinsX();
-  Int_t firstbinx = hist->GetFirstXbin();
-  Int_t lastbinx = hist->GetLastXbin();
-  Int_t nbinx = hist->GetNbinsX() + 2;
-  Int_t firstbin = hist->GetFirstYbin();
-  Int_t lastbin = hist->GetLastYbin();
-
-  Int_t nPads = getNumberOfPads(row);
-  Int_t iPatch = getPatch(row);
-  Double_t padPitch = getPadPitchWidth(iPatch);
-  Float_t x = Row2X(row);
-  Float_t x2 = x * x;
-
-  for (Int_t pad = 0; pad < nPads; pad++) {
-    Float_t y = (pad - 0.5 * (nPads - 1)) * padPitch;
-    Float_t starty = (pad - 0.5 * nPads) * padPitch;
-    Float_t r1 = x2 + starty * starty;
-    Float_t xoverr1 = x / r1;
-    Float_t startyoverr1 = starty / r1;
-    Float_t endy = (pad - 0.5 * (nPads - 2)) * padPitch;
-    Float_t r2 = x2 + endy * endy;
-    Float_t xoverr2 = x / r2;
-    Float_t endyoverr2 = endy / r2;
-    Float_t a1 = beta1minusbeta2 / (xoverr1 - beta2);
-    Float_t b1 = (xoverr1 - beta1) / (xoverr1 - beta2);
-    Float_t a2 = beta1minusbeta2 / (xoverr2 - beta2);
-    Float_t b2 = (xoverr2 - beta1) / (xoverr2 - beta2);
-
-    Float_t alpha1 = (a1 * startyoverr1 + b1 * ymin - xmin) / xbin;
-    Float_t deltaalpha1 = b1 * histbin / xbin;
-    if (b1 < 0)
-      alpha1 += deltaalpha1;
-    Float_t alpha2 = (a2 * endyoverr2 + b2 * ymin - xmin) / xbin;
-    Float_t deltaalpha2 = b2 * histbin / xbin;
-    if (b2 >= 0)
-      alpha2 += deltaalpha2;
-  }
-
-  // For a given row and the starting pad of the clusters in a specific eta slice (??) do the transformation (??)
-}
-
-void houghTransform(int totalNumberOfClusters)
-{
-  // Allocate space for the accumulator
-  parameterSpace = new AliceO2::Hough::Accumulator* [etaResolution];
-
-  Int_t numberOfAccumulatorBinsX = 100;
-  Int_t numberOfAccumulatorBinsY = 100;
-
-  for (Int_t i = 0; i < etaResolution; i++) {
-    parameterSpace[i] =
-      new AliceO2::Hough::Accumulator(numberOfAccumulatorBinsX, xMin, xMax, numberOfAccumulatorBinsY, yMin, yMax);
-  }
-
-  AliceO2::Hough::Accumulator* hist = parameterSpace[0];
-  Int_t ncellsx = (hist->GetNbinsX() + 3) / 2;
-  Int_t ncellsy = (hist->GetNbinsY() + 3) / 2;
-  Int_t ncells = ncellsx * ncellsy;
-  /*
-    if (!fGapCount) {
-      fGapCount = new UChar_t* [etaResolution];
-      for (Int_t i = 0; i < etaResolution; i++) {
-        fGapCount[i] = new UChar_t[ncells];
-      }
-    }
-
-    AliHLTHistogram* hist = fParamSpace[0];
-    Int_t ncells = (hist->GetNbinsX() + 2) * (hist->GetNbinsY() + 2);
-
-    if (!fGapCount) {
-      cout << "Transformer: Allocating " << etaResolution * ncells * sizeof(UChar_t) << " bytes to fGapCount" << endl;
-      fGapCount = new UChar_t* [etaResolution];
-      for (Int_t i = 0; i < etaResolution; i++) {
-        fGapCount[i] = new UChar_t[ncells];
-      }
-    }
-    if (!fCurrentRowCount) {
-      cout << "Transformer: Allocating " << etaResolution * ncells * sizeof(UChar_t) << " bytes to fCurrentRowCount" <<
-    endl;
-      fCurrentRowCount = new UChar_t* [etaResolution];
-      for (Int_t i = 0; i < etaResolution; i++) {
-        fCurrentRowCount[i] = new UChar_t[ncells];
-      }
-    }
-    if (!fPrevBin) {
-      cout << "Transformer: Allocating " << etaResolution * ncells * sizeof(UChar_t) << " bytes to fPrevBin" << endl;
-      fPrevBin = new UChar_t* [etaResolution];
-      for (Int_t i = 0; i < etaResolution; i++) {
-        fPrevBin[i] = new UChar_t[ncells];
-      }
-    }
-    if (!fNextBin) {
-      cout << "Transformer: Allocating " << etaResolution * ncells * sizeof(UChar_t) << " bytes to fNextBin" << endl;
-      fNextBin = new UChar_t* [etaResolution];
-      for (Int_t i = 0; i < etaResolution; i++) {
-        fNextBin[i] = new UChar_t[ncells];
-      }
-    }
-
-    Int_t ncellsy = hist->GetNbinsY() + 2;
-
-    if (!fNextRow) {
-      cout << "Transformer: Allocating " << etaResolution * ncellsy * sizeof(UChar_t) << " bytes to fNextRow" << endl;
-      fNextRow = new UChar_t* [etaResolution];
-      for (Int_t i = 0; i < etaResolution; i++) {
-        fNextRow[i] = new UChar_t[ncellsy];
-      }
-    }
-
-    if (!fTrackNRows) {
-      cout << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fTrackNRows" << endl;
-      fTrackNRows = new UChar_t[ncells];
-
-      cout << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fTrackFirstRow" << endl;
-      fTrackFirstRow = new UChar_t[ncells];
-
-      cout << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fTrackLastRow" << endl;
-      fTrackLastRow = new UChar_t[ncells];
-
-      cout << "Transformer: Allocating " << ncells * sizeof(UChar_t) << " bytes to fInitialGapCount" << endl;
-      fInitialGapCount = new UChar_t[ncells];
-
-      AliHLTHoughTrack track;
-      Int_t xmin = hist->GetFirstXbin();
-      Int_t xmax = hist->GetLastXbin();
-      Int_t xmiddle = (hist->GetNbinsX() + 1) / 2;
-      Int_t ymin = hist->GetFirstYbin();
-      Int_t ymax = hist->GetLastYbin();
-      Int_t nxbins = hist->GetNbinsX() + 2;
-      Int_t nxgrid = (hist->GetNbinsX() + 3) / 2 + 1;
-      Int_t nygrid = hist->GetNbinsY() + 3;
-
-      AliHLTTrackLength* tracklength = new AliHLTTrackLength[nxgrid * nygrid];
-      memset(tracklength, 0, nxgrid * nygrid * sizeof(AliHLTTrackLength));
-
-      for (Int_t ybin = ymin - 1; ybin <= (ymax + 1); ybin++) {
-        for (Int_t xbin = xmin - 1; xbin <= xmiddle; xbin++) {
-          fTrackNRows[xbin + ybin * nxbins] = 255;
-          for (Int_t deltay = 0; deltay <= 1; deltay++) {
-            for (Int_t deltax = 0; deltax <= 1; deltax++) {
-
-              AliHLTTrackLength* curtracklength = &tracklength[(xbin + deltax) + (ybin + deltay) * nxgrid];
-              UInt_t maxfirstrow = 0;
-              UInt_t maxlastrow = 0;
-              Float_t maxtrackpt = 0;
-              if (curtracklength->fIsFilled) {
-                maxfirstrow = curtracklength->fFirstRow;
-                maxlastrow = curtracklength->fLastRow;
-                maxtrackpt = curtracklength->fTrackPt;
-              } else {
-                Float_t xtrack = hist->GetPreciseBinCenterX((Float_t)xbin + 0.5 * (Float_t)(2 * deltax - 1));
-                Float_t ytrack = hist->GetPreciseBinCenterY((Float_t)ybin + 0.5 * (Float_t)(2 * deltay - 1));
-
-                Float_t psi = atan((xtrack - ytrack) / (fgBeta1 - fgBeta2));
-                Float_t kappa = 2.0 * (xtrack * cos(psi) - fgBeta1 * sin(psi));
-                track.SetTrackParameters(kappa, psi, 1);
-                maxtrackpt = track.GetPt();
-                if (maxtrackpt < 0.9 * 0.1 * AliHLTTransform::GetSolenoidField()) {
-                  maxfirstrow = maxlastrow = 0;
-                  curtracklength->fIsFilled = kTRUE;
-                  curtracklength->fFirstRow = maxfirstrow;
-                  curtracklength->fLastRow = maxlastrow;
-                  curtracklength->fTrackPt = maxtrackpt;
-                } else {
-                  Bool_t firstrow = kFALSE;
-                  UInt_t curfirstrow = 0;
-                  UInt_t curlastrow = 0;
-
-                  Double_t centerx = track.GetCenterX();
-                  Double_t centery = track.GetCenterY();
-                  Double_t radius = track.GetRadius();
-  */
-  // Iterate through all the pad rows per eta slice for each slice of a TPC partition/patch
-  for (UInt_t partition = 0; partition < 6; partition++) {
-    for (UInt_t slice = 0; slice < 36; slice++) {
-      for (UChar_t row = getFirstPadRow(partition); row <= getLastPadRow(partition); row++) {
-        for (UInt_t etaSlice = 0; etaSlice < etaResolution; etaSlice++) {
-          fillCluster(hist, row, etaSlice);
-        }
-      }
-    }
-  }
-}
-
 /// Determine the minimum and maximum values of the pseudorapidity (eta). That way, the TPC digits can be
 /// transformed in
 /// two dimensions instead of three in slices of similar pseudorapidity
@@ -546,7 +370,7 @@ void determineMinMaxEta(int totalNumberOfClusters)
 {
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
 
-    Float_t eta = getClusterEta(i);
+    Float_t eta = clusterCollection->getClusterEta(i);
 
     // Set initial values to etalphaMin and etalphaMax
     if (i == 0) {
@@ -571,22 +395,22 @@ void determineMinMaxXY(int totalNumberOfClusters)
 {
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     if (i == 0) {
-      xMin = getClusterX(i);
-      xMax = getClusterX(i);
-      yMin = getClusterY(i);
-      yMax = getClusterY(i);
+      xMin = clusterCollection->getClusterX(i);
+      xMax = clusterCollection->getClusterX(i);
+      yMin = clusterCollection->getClusterY(i);
+      yMax = clusterCollection->getClusterY(i);
       continue;
     }
-    if (getClusterX(i) < xMin) {
-      xMin = getClusterX(i);
-    } else if (getClusterX(i) > xMax) {
-      xMax = getClusterX(i);
+    if (clusterCollection->getClusterX(i) < xMin) {
+      xMin = clusterCollection->getClusterX(i);
+    } else if (clusterCollection->getClusterX(i) > xMax) {
+      xMax = clusterCollection->getClusterX(i);
     }
 
-    if (getClusterY(i) < yMin) {
-      yMin = getClusterY(i);
-    } else if (getClusterY(i) > yMax) {
-      yMax = getClusterY(i);
+    if (clusterCollection->getClusterY(i) < yMin) {
+      yMin = clusterCollection->getClusterY(i);
+    } else if (clusterCollection->getClusterY(i) > yMax) {
+      yMax = clusterCollection->getClusterY(i);
     }
   }
   cout << "xMin: " << xMin << " xMax: " << xMax << " yMin: " << yMin << " yMax: " << yMax << endl;
@@ -599,22 +423,22 @@ void determineMinMaxAlphaBeta(int totalNumberOfClusters)
 {
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     if (i == 0) {
-      alphaMin = getClusterX(i);
-      alphaMax = getClusterX(i);
-      betaMin = getClusterY(i);
-      betaMax = getClusterY(i);
+      alphaMin = clusterCollection->getClusterX(i);
+      alphaMax = clusterCollection->getClusterX(i);
+      betaMin = clusterCollection->getClusterY(i);
+      betaMax = clusterCollection->getClusterY(i);
       continue;
     }
-    if (getClusterAlpha(i) < alphaMin) {
-      alphaMin = getClusterAlpha(i);
-    } else if (getClusterX(i) > alphaMax) {
-      alphaMax = getClusterAlpha(i);
+    if (clusterCollection->getClusterAlpha(i) < alphaMin) {
+      alphaMin = clusterCollection->getClusterAlpha(i);
+    } else if (clusterCollection->getClusterX(i) > alphaMax) {
+      alphaMax = clusterCollection->getClusterAlpha(i);
     }
 
-    if (getClusterY(i) < betaMin) {
-      betaMin = getClusterBeta(i);
-    } else if (getClusterBeta(i) > betaMax) {
-      betaMax = getClusterBeta(i);
+    if (clusterCollection->getClusterY(i) < betaMin) {
+      betaMin = clusterCollection->getClusterBeta(i);
+    } else if (clusterCollection->getClusterBeta(i) > betaMax) {
+      betaMax = clusterCollection->getClusterBeta(i);
     }
   }
   cout << "alphaMin: " << alphaMin << " alphaMax: " << alphaMax << " betaMin: " << betaMin << " betaMax: " << betaMax
@@ -623,90 +447,15 @@ void determineMinMaxAlphaBeta(int totalNumberOfClusters)
 
 void printData(int totalNumberOfClusters)
 {
-  cout << "Cluster ID" << setw(13) << "X coordinate" << setw(13) << "Y coordinate" << setw(13) << "Z coordinate"
-       << endl;
+  cout << "ID" << setw(8) << "X" << setw(8) << "Y" << setw(8) << "Z" << setw(9) << "Pad Row" << setw(10) << "Pad"
+       << setw(10) << "Time" << setw(10) << "Charge" << endl;
 
   for (int i = 0; i < totalNumberOfClusters; i++) {
-    cout << (AliHLTUInt32_t)getClusterID(i) << setw(13) << getClusterX(i) << setw(13) << getClusterY(i) << setw(13)
-         << getClusterZ(i) << endl;
+    cout << (AliHLTUInt32_t)clusterCollection->getClusterID(i) << setw(13) << clusterCollection->getClusterX(i)
+         << setw(13) << clusterCollection->getClusterY(i) << setw(13) << clusterCollection->getClusterZ(i) << setw(8)
+         << (UInt_t)clusterCollection->getClusterPadRow(i) << setw(8) << clusterCollection->getClusterPad(i) << setw(8)
+         << clusterCollection->getClusterTime(i) << setw(7) << clusterCollection->getClusterCharge(i) << endl;
   }
-}
-
-int processData(std::string dataPath, std::string dataType, std::string dataOrigin)
-{
-  // Open data file for reading
-  std::ifstream inputData(dataPath.c_str(), std::ifstream::binary);
-  if (!inputData) {
-    std::cerr << "Error, cluster data file " << dataPath << " could not be accessed" << endl;
-    std::exit(1);
-  }
-
-  // Get length of file
-  inputData.seekg(0, inputData.end);
-  int dataLength = inputData.tellg();
-  inputData.seekg(0, inputData.beg);
-
-  // Allocate memory and read file to memory
-  char* inputBuffer = new char[dataLength];
-  inputData.read(inputBuffer, dataLength);
-  inputData.close();
-
-  // Retrieve the TPC slice and partition from the filename
-  std::string currentSliceString(dataPath, dataPath.length() - 6, 2);
-  std::string currentPartitionString(dataPath, dataPath.length() - 2, 2);
-
-  AliHLTUInt8_t currentSlice = std::stoul(currentSliceString, nullptr, 16);
-  AliHLTUInt8_t currentPartition = std::stoul(currentPartitionString, nullptr, 16);
-
-  // Initialize a cluster point collection
-  spacepoints = std::unique_ptr<AliHLTTPCSpacePointContainer>(new AliHLTTPCSpacePointContainer);
-  if (!spacepoints.get()) {
-    std::cerr << "Error, could not create a space point collection" << endl;
-    std::exit(1);
-  }
-
-  // Create an AliHLTComponentBlockData object, fill it with default values and then set its pointer to
-  // the data buffer
-  AliHLTComponentBlockData bd;
-  AliHLTComponent::FillBlockData(bd);
-  bd.fPtr = inputBuffer;
-  bd.fSize = dataLength;
-  // bd.fDataType=kAliHLTVoidDataType;
-  AliHLTComponent::SetDataType(bd.fDataType, dataType.c_str(), dataOrigin.c_str());
-  bd.fSpecification = kAliHLTVoidDataSpec;
-
-  // Set slice and partition
-  AliHLTTPCDefinitions::EncodeDataSpecification(currentSlice, currentSlice, currentPartition, currentPartition);
-
-  // Add the AliHLTComponentBlockData object to AliHLTTPCSpacePointContainer
-  int numberOfClusters = spacepoints->AddInputBlock(&bd);
-
-  // cout << "ID" << setw(8) << "fX" << setw(8) << "fY" << setw(8) << "fZ" << setw(9) << "Pad Row" << setw(10)
-  //     << "SigmaY2" << setw(10) << "SigmaZ2" << setw(7) << "Charge" << setw(7) << "QMax" << setw(10) << "Track Id"
-  //     << setw(7) << "MC Id" << setw(7) << "Used" << endl;
-
-  // cout << *spacepoints << endl;
-
-  // Retrieve the cluster information from AliHLTTPCSpacePointContainer
-  std::vector<AliHLTUInt32_t> clusterIDs;
-  spacepoints->GetClusterIDs(clusterIDs);
-
-  // Append the cluster IDs and their X, Y and Z coordinates to the clusterCartesianCoordinates vector
-  for (vector<AliHLTUInt32_t>::const_iterator element = clusterIDs.begin(); element != clusterIDs.end(); element++) {
-    AliHLTUInt32_t clusterID = *element;
-
-    setClusterParameters(clusterID, spacepoints->GetX(clusterID), spacepoints->GetY(clusterID),
-                         spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID),
-                         spacepoints->GetPadRow(clusterID), currentSlice, currentPartition);
-  }
-
-  // De-allocate memory space
-  if (inputBuffer) {
-    delete[] inputBuffer;
-  }
-  inputBuffer = NULL;
-
-  return numberOfClusters;
 }
 
 int main(int argc, char** argv)
@@ -730,12 +479,15 @@ int main(int argc, char** argv)
 
   int totalNumberOfClusters = 0, totalNumberOfDataFiles = 0;
 
+  clusterCollection = new AliceO2::Hough::ClusterCollection();
+
   // Traverse the filesystem and execute processData for each cluster file found
   if (boost::filesystem::exists(dataPath) && boost::filesystem::is_directory(dataPath)) {
     for (boost::filesystem::directory_iterator directoryIterator(dataPath); directoryIterator != endIterator;
          ++directoryIterator) {
       if (boost::filesystem::is_regular_file(directoryIterator->status())) {
-        totalNumberOfClusters += processData(directoryIterator->path().string(), dataType, dataOrigin);
+        totalNumberOfClusters +=
+          clusterCollection->processData(directoryIterator->path().string(), dataType, dataOrigin);
         totalNumberOfDataFiles++;
       }
     }
@@ -745,12 +497,10 @@ int main(int argc, char** argv)
     exit(1);
   }
 
-  cout << "Added " << totalNumberOfClusters << " clusters from " << totalNumberOfDataFiles
-       << " data files. Cluster vector size: " << clusterData.size() << endl;
+  cout << "Added " << totalNumberOfClusters << " clusters from " << totalNumberOfDataFiles << " data files." << endl;
 
-  if (totalNumberOfClusters != clusterData.size()) {
-    std::cerr << "The cluster vector size does not match the reported number of clusters" << endl;
-    exit(1);
+  for (int i = 0; i < AliceO2::Hough::Transform::GetNRows(); i++) {
+    cout << clusterCollection->getNumberOfClustersPerPadRow(i) << " Clusters for PadRow " << i << endl;
   }
 
   // DEBUG
@@ -760,24 +510,76 @@ int main(int argc, char** argv)
   calculateEtaSlice(totalNumberOfClusters);
   drawCartesianClusters1D(15, totalNumberOfClusters);
   conformalMapping(totalNumberOfClusters);
+  conformalMapping2();
   determineMinMaxAlphaBeta(totalNumberOfClusters);
   drawConformalMappingClusters1D(15, totalNumberOfClusters);
 
+  // printData(totalNumberOfClusters);
+
   // FIXME: find the correct values here
-  // AliceO2::Hough::HoughTransformerRow row(Int_t slice, Int_t patch, Int_t netasegments, Bool_t /*DoMC*/, Float_t
+  // AliceO2::Hough::TransformerRow row(Int_t slice, Int_t patch, Int_t netasegments, Bool_t /*DoMC*/, Float_t
   // zvertex);
-  AliceO2::Hough::HoughTransformerRow row(0, 0, etaResolution);
+  for (UInt_t slice = 0; slice < AliceO2::Hough::Transform::GetNSlice(); slice++) {
+    for (UInt_t patch = 0; patch < AliceO2::Hough::Transform::GetNPatches(); patch++) {
+      AliceO2::Hough::TransformerRow row(slice, patch, etaResolution);
 
-  row.Reset();
+      // Allocate space for the accumulator and determine initial values. This must be done before executing the TransformCircle method
+      row.CreateHistograms(rResolution, xMin, xMax, thetaResolution, yMin, yMax);
 
-  // Allocate space for the accumulator. This must be done before executing the TransformCircle method
-  row.CreateHistograms(rResolution, xMin, xMax, thetaResolution, yMin, yMax);
+      // Perform the actual transformation
+      row.TransformCircle(clusterCollection);
 
-  // FIXME: port the TransformCircleFromDigitArray method, by supplying the HLT data we already have instead of the
-  // required HLT binary file
-  // FIXME: Also store clusters on a per pad row basis
-  row.TransformCircle();
+      cout << "Number of Eta Segments: " << row.GetNEtaSegments() << " - etaResolution: " << etaResolution << endl;
 
+      for (Int_t segment = 0; segment < row.GetNEtaSegments(); segment++) {
+        // Get a pointer for the accumulator for each eta slice
+        AliceO2::Hough::Accumulator* accumulatorPointer = row.GetHistogram(segment);
+
+        if (accumulatorPointer->GetNEntries() > 0) {
+          cout << "Number of entries in the Accumulator for eta segment " << segment << ": "
+               << accumulatorPointer->GetNEntries() << endl;
+          exit(0);
+        }
+      }
+      // Resets all the histograms. Should be done when processing new slice
+      row.Reset();
+    }
+  }
+
+  /*
+    AliceO2::Hough::TransformerRow row(0, 0, etaResolution);
+
+    // Allocate space for the accumulator. This must be done before executing the TransformCircle method
+    row.CreateHistograms(rResolution, xMin, xMax, thetaResolution, yMin, yMax);
+
+  //  row.SetLowerThreshold(3);
+  //  row.SetUpperThreshold(5);
+
+    // Performs the actual transformation
+    row.TransformCircle(clusterCollection);
+
+    cout << "Number of Eta Segments: " << row.GetNEtaSegments() << " - etaResolution: " << etaResolution << endl;
+
+    for ( Int_t segment = 0; segment < row.GetNEtaSegments(); segment++) {
+      //Get a pointer for the accumulator for each eta slice
+      AliceO2::Hough::Accumulator* accumulatorPointer = row.GetHistogram(segment);
+
+      if (accumulatorPointer->GetNEntries() > 0) {
+        cout << "Number of entries in the Accumulator for eta segment "<< segment << ": " <<
+  accumulatorPointer->GetNEntries() << endl;
+        exit(0);
+      }
+
+      //cout << "Number of entries in the Accumulator for eta segment "<< segment << ": " <<
+  accumulatorPointer->GetNEntries() << endl;
+
+      //FIXME: The accumulator array can be accessed directly through here:
+      //int* GetContentArray() const { return fContent; }
+    }
+
+    // Resets all the histograms. Should be done when processing new slice
+    row.Reset();
+  */
   //  AliceO2::Hough::Accumulator** test = new AliceO2::Hough::Accumulator* [5];
 
   // AliceO2::Hough::Accumulator test2;
@@ -870,6 +672,7 @@ int main(int argc, char** argv)
     // Draw the accumulator data as curves
     drawAccumulatorCurves(totalNumberOfClusters);
   */
+  delete clusterCollection;
 
   return 0;
 }

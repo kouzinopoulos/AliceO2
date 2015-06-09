@@ -5,7 +5,7 @@
 #ifndef ALICEO2_HOUGH_ACCUMULATOR_H_
 #define ALICEO2_HOUGH_ACCUMULATOR_H_
 
-#include "AliHLTStandardIncludes.h"
+#include "StandardIncludes.h"
 
 namespace AliceO2 {
 namespace Hough {

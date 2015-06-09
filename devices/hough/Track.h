@@ -1,7 +1,7 @@
 // @(#) $Id: Track.h 15995 2006-11-30 17:45:45Z hristov $
 
-#ifndef ALIL3TRACK_H
-#define ALIL3TRACK_H
+#ifndef ALICEO2_HOUGH_TRACK_H_
+#define ALICEO2_HOUGH_TRACK_H_
 
 class AliHLTVertex;
 class AliHLTSpacePointData;
@@ -13,23 +13,34 @@ public:
   virtual ~Track();
 
   virtual void Set(Track* track);
+
+  /// Compares tracks
   virtual int Compare(const Track* track) const;
+
+  /// Calculate Radius, CenterX and CenterY from Psi, X0, Y0
   virtual void CalculateHelix();
 
   bool CalculateReferencePoint(double angle, double radius = 132); // Calculate Reference Point
-  bool CalculateEdgePoint(double angle); // Calculate crossing point with line
-  bool CalculatePoint(double xplane); // Calculate crossing point with X-plane
+  bool CalculateEdgePoint(double angle);                           // Calculate crossing point with line
+  bool CalculatePoint(double xplane);                              // Calculate crossing point with X-plane
   bool IsPoint() { return fIsPoint; }
+
+  /// Calculate the crossing angle between track and given padrow. Take the dot product of the tangent vector of the
+  /// track, and vector perpendicular to the padrow. In order to do this, we need the tangent vector to the track at the
+  /// point. This is done by rotating the radius vector by 90 degrees; rotation matrix: (  0  1 ) ( -1  0 )
   double GetCrossingAngle(int padrow, int slice = -1);
+
+  /// Assumes the track is given in local coordinates
   bool GetCrossingPoint(int padrow, float* xyz);
   double GetDistance(double /*x0*/, double /*x1*/) { return 0; }
   void UpdateToFirstPoint();
   // void GetClosestPoint(AliHLTVertex *vertex,double &closest_x,double &closest_y,double &closest_z);
+
+  /// Rotate track to global parameters.  If the flag tolocal is set, the track is rotated to local coordinates.
   void Rotate(int slice, bool tolocal = false);
   bool IsLocal() const { return fIsLocal; }
   void Print() const;
 
-  // getter
   double GetFirstPointX() const { return fFirstPoint[0]; }
   double GetFirstPointY() const { return fFirstPoint[1]; }
   double GetFirstPointZ() const { return fFirstPoint[2]; }
@@ -67,6 +78,7 @@ public:
   double GetPy() const { return fPt * sin(fPsi); }
   double GetPz() const { return fPt * fTanl; }
 
+  /// Returns the total momentum
   double GetP() const;
   double GetPseudoRapidity() const;
   double GetRapidity() const;
@@ -124,7 +136,7 @@ public:
 
 private:
   int fNHits; // Number of hits
-  int fMCid; // Assigned id from MC data.
+  int fMCid;  // Assigned id from MC data.
 
   double fKappa;        // Signed curvature (projected to a circle)
   double fRadius;       // Radius of the helix (projected to a circle)
@@ -133,35 +145,35 @@ private:
   bool fFromMainVertex; // true if tracks origin is the main vertex, otherwise false
 
   int fRowRange[2]; // Subsector where this track was build
-  int fSector; // Sector # where  this track was build
+  int fSector;      // Sector # where  this track was build
 
   // data from momentum fit
   int fQ; // charge measured fit
 
   // track parameters:
-  double fTanl; // tan of dipangle
-  double fPsi; // azimuthal angle of the momentum
-  double fPt; // transverse momentum
+  double fTanl;   // tan of dipangle
+  double fPsi;    // azimuthal angle of the momentum
+  double fPt;     // transverse momentum
   double fLength; // length of track (s)
 
-  double fPterr; // error in pt
-  double fPsierr; // error in psi
-  double fZ0err; // error in first point
+  double fPterr;   // error in pt
+  double fPsierr;  // error in psi
+  double fZ0err;   // error in first point
   double fTanlerr; // error in tanl
 
   double fPhi0; // azimuthal angle of the first point
-  double fR0; // radius of the first point
-  double fZ0; // z coordinate of the first point (fFirstPoint[2])
+  double fR0;   // radius of the first point
+  double fZ0;   // z coordinate of the first point (fFirstPoint[2])
 
   double fFirstPoint[3]; // first point
-  double fLastPoint[3]; // last point
-  double fPoint[3]; // point
-  double fPointPsi; // azimuthal angle of the momentum at Point
+  double fLastPoint[3];  // last point
+  double fPoint[3];      // point
+  double fPointPsi;      // azimuthal angle of the momentum at Point
 
   bool fIsPoint; // Helix crosses the X-plane
   bool fIsLocal; // Track given in local coordinates.
 
-  float fPID; // pid
+  float fPID;                    // pid
   unsigned int fHitNumbers[159]; // Array of hit numbers for this track
 
   bool IsPoint(bool ispoint)

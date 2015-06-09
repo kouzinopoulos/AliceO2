@@ -3,57 +3,10 @@
 /// \author Anders Vestbo <vestbo@fi.uib.no>, Uli Frankenfeld <franken@fi.uib.no>, Constantin Loizides
 /// <loizides@ikf.uni-frankfurt.de>
 
-#include "AliHLTStandardIncludes.h"
-
+#include "StandardIncludes.h"
 #include "Transform.h"
 
 using namespace AliceO2::Hough;
-
-/** \class Transform
-<pre>
-//_____________________________________________________________
-// Transform
-//
-// Transformation class for ALICE TPC.
-//
-// Class which contains all detector specific parameters for the TPC,
-// and different useful functions for coordinate transforms.
-//
-// The class is completely static, which means that no object needs
-// to be instantiated. Function calls should then be done like, e.g.:
-//
-// double eta = Transform::GetEta(xyz);
-//
-// IMPORTANT: If used as is, default detector parameters will be used,
-//            and you really have to make sure that these correspond to
-//            the AliROOT version you are currently working on!!
-//            You should therefore always initialize the parameters by
-//
-//            Transform::Init(path);
-//
-//            where path is a char*, giving the path to where file containing
-//            the detector parameter is located. This file should be called
-//            "l3transform.config", and can be created with the function MakeInitFile.
-//
-//            You can also force reading the parameters from a AliTPCParam object
-//            by setting the flag;
-//
-//            Transform::Init(path,true);
-//
-//            where path is a char*
-//            either providing the rootfile name containing the geometry or
-//            the path to the rootfile which should then be called alirunfile.root.
-//            Note that for both of these cases you have to
-//            compile with USEPACKAGE=ALIROOT set (see level3code/Makefile.conf).
-//
-//            Currently, there are 4 versions of the Transformer:
-//             fVersion==kValiroot: ALIROOT-head compatible
-//             fVersion==kVcosmics: Cosmics data run (2003) compatible
-//             fVersion==kVdefault: means no config file has been loaded
-//             fVersion==kVdeprecated: dont use old (before July 2003) style of transformer
-//
-</pre>
-*/
 
 const double Transform::fgkAnodeWireSpacing = 0.25; // Taken from the TDR
 const double Transform::fgkBFACT = 0.0029980;       // Conversion Factor
@@ -193,101 +146,97 @@ double Transform::fgSin[36] = { 0.1736481786,  0.5000000000,  0.7660444379,  0.9
 
 int Transform::GetNPads(int row)
 {
-  // get number of pads per row
   if (row < 0 || row >= fgNRow) {
     cout << "Wrong row " << row << endl;
     return 0;
   }
-
   return fgNPads[row];
 }
 
 int Transform::GetFirstRow(int patch)
 {
-  // get first row per patch
-
-  if (patch == -1)
+  if (patch == -1) {
     return 0;
-  else if (patch < -1 || patch >= 6) {
+  } else if (patch < -1 || patch >= 6) {
     cout << "Wrong patch " << patch << endl;
     return 0;
-  } else
+  } else {
     return fgRows[patch][0];
+  }
 }
 
 int Transform::GetLastRow(int patch)
 {
-  // get last row per patch
-  if (patch == -1)
+  if (patch == -1) {
     return fgRows[5][1];
-  else if (patch < -1 || patch >= 6) {
+  } else if (patch < -1 || patch >= 6) {
     cout << "Wrong patch " << patch << endl;
     return 0;
-  } else
+  } else {
     return fgRows[patch][1];
+  }
 }
 
 int Transform::GetFirstRowOnDDL(int patch)
 {
-  // get first row per patch
-
-  if (patch == -1)
+  if (patch == -1) {
     return 0;
-  else if (patch < -1 || patch >= 6) {
+  } else if (patch < -1 || patch >= 6) {
     cout << "Wrong patch " << patch << endl;
     return 0;
   } else {
-    if (patch == 1)
+    if (patch == 1) {
       return fgRows[patch][0] + 1;
+    }
     return fgRows[patch][0];
   }
 }
 
 int Transform::GetLastRowOnDDL(int patch)
 {
-  // get last row per patch
-  if (patch == -1)
+  if (patch == -1) {
     return fgRows[5][1];
-  else if (patch < -1 || patch >= 6) {
+  } else if (patch < -1 || patch >= 6) {
     cerr << "Wrong patch " << patch << endl;
     return 0;
   } else {
-    if (patch == 2 || patch == 4)
+    if (patch == 2 || patch == 4) {
       return fgRows[patch][1] - 1;
+    }
     return fgRows[patch][1];
   }
 }
 
 int Transform::GetNRows(int patch)
 {
-  // get number of rows per patch
-  if (patch == -1)
+  if (patch == -1) {
     return fgNRow;
-  else if (patch < -1 || patch >= 6) {
+  } else if (patch < -1 || patch >= 6) {
     cerr << "Wrong patch " << patch << endl;
     return 0;
-  } else
+  } else {
     return fgNRows[patch];
+  }
 }
 
 int Transform::GetPadRow(float xvalue)
 {
-  // Find the padrow number corresponding to cartesian _local_ x value
   if (xvalue < 0 || xvalue > 250) {
     cerr << "Suspicious x-value, make sure it is in local coordinate! " << xvalue << endl;
     return -1;
   }
 
   int x = (int)rint(xvalue * 10);
-  if (x < (int)rint(fgX[1] * 10))
+  if (x < (int)rint(fgX[1] * 10)) {
     return 0;
-  else if (x > (int)rint(fgX[fgNRow - 2] * 10))
+  } else if (x > (int)rint(fgX[fgNRow - 2] * 10)) {
     return fgNRow - 1;
-  else {
+  } else {
     int padrow = 1; // Of course, a more clever algorithm could help here
     while (padrow < fgNRow - 2) {
-      if (x > (int)rint(fgX[padrow - 1] * 10) && x < (int)rint(fgX[padrow + 1] * 10))
+      if (x > (int)rint(fgX[padrow - 1] * 10) && x < (int)rint(fgX[padrow + 1] * 10)) {
         break;
+      }
       padrow++;
     }
     return padrow;
@@ -296,15 +245,15 @@ int Transform::GetPadRow(float xvalue)
 
 int Transform::GetPatch(int padrow)
 {
-  // get patch for padrow
   if (padrow < 0 || padrow >= fgNRow) {
     cerr << "Wrong padrow " << padrow << endl;
     return -2;
   }
   int patch = 0;
   while (patch < fgNPatches) {
-    if (padrow >= fgRows[patch][0] && padrow <= fgRows[patch][1])
+    if (padrow >= fgRows[patch][0] && padrow <= fgRows[patch][1]) {
       break;
+    }
     patch++;
   }
   return patch;
@@ -312,18 +261,20 @@ int Transform::GetPatch(int padrow)
 
 double Transform::GetPadLength(int padrow)
 {
-  // get pad length for padrow
   if (padrow >= fgNRow) {
     cerr << "Wrong padrow " << padrow << endl;
     return 0;
   }
 
-  if (padrow < fgNRowLow)
+  if (padrow < fgNRowLow) {
     return fgInnerPadLength;
-  if (padrow >= fgNRowLow && padrow < fgNRowLow + fgNRowUp1 - 1)
+  }
+  if (padrow >= fgNRowLow && padrow < fgNRowLow + fgNRowUp1 - 1) {
     return fgOuter1PadLength;
-  if (padrow >= fgNRowLow + fgNRowUp1 - 1)
+  }
+  if (padrow >= fgNRowLow + fgNRowUp1 - 1) {
     return fgOuter2PadLength;
+  }
 
   // should never happen
   cerr << "Wrong padrow " << padrow << endl;
@@ -332,7 +283,6 @@ double Transform::GetPadLength(int padrow)
 
 double Transform::GetPadPitchWidth(int patch)
 {
-  // get pad patch width for patch
   if (patch < 0 || patch > fgNPatches) {
     cerr << "Wrong patch " << patch << endl;
     return -1;
@@ -342,17 +292,12 @@ double Transform::GetPadPitchWidth(int patch)
 
 double Transform::GetParSigmaY2(int padrow, float z, float angle)
 {
-  // Calculate the expected transverse cluster width as a function of
-  // drift distance and crossing angle.
-  // z = local z-coordinate of cluster
-  // angle = track crossing angle with normal to padrow plane
-  // return value = sigma^2 (cartesian coordinates)
-
   double drift;
-  if (z > 0)
+  if (z > 0) {
     drift = fgZLength - z;
-  else
+  } else {
     drift = fgZLength + z;
+  }
 
   double t1 = GetPRFSigma(padrow) * GetPRFSigma(padrow);
   double t2 = fgDiffT * fgDiffT * drift;
@@ -364,17 +309,12 @@ double Transform::GetParSigmaY2(int padrow, float z, float angle)
 
 double Transform::GetParSigmaZ2(int padrow, float z, float tgl)
 {
-  // Calculate the expected longitudinal cluster width as a function of
-  // drift distance and track crossing angle.
-  // z = local z-coordinate of cluster
-  // tgl = tan(dipangle)
-  // return value = sigma^2 (cartesian coordinates)
-
   double drift;
-  if (z > 0)
+  if (z > 0) {
     drift = Transform::GetZLength() - 0.275 - z;
-  else
+  } else {
     drift = Transform::GetZLength() - 0.302 + z;
+  }
 
   double t1 = fgZSigma * fgZSigma;
   double t2 = fgDiffL * fgDiffL * drift;
@@ -385,18 +325,19 @@ double Transform::GetParSigmaZ2(int padrow, float z, float tgl)
 
 double Transform::GetPRFSigma(int padrow)
 {
-  // get sigma of pad response function for padrow
-
   if (padrow >= fgNRow) {
     cerr << "Wrong padrow " << padrow << endl;
     return 0;
   }
-  if (padrow < fgNRowLow)
+  if (padrow < fgNRowLow) {
     return fgInnerPRFSigma;
-  if (padrow >= fgNRowLow && padrow < fgNRowLow + fgNRowUp1 - 1)
+  }
+  if (padrow >= fgNRowLow && padrow < fgNRowLow + fgNRowUp1 - 1) {
     return fgOuter1PRFSigma;
-  if (padrow >= fgNRowLow + fgNRowUp1 - 1)
+  }
+  if (padrow >= fgNRowLow + fgNRowUp1 - 1) {
     return fgOuter2PRFSigma;
+  }
 
   // should never happen
   cerr << "Wrong padrow " << padrow << endl;
@@ -405,7 +346,6 @@ double Transform::GetPRFSigma(int padrow)
 
 double Transform::GetEta(float* xyz)
 {
-  // get eta
   double r3 = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
   double eta = 0.5 * log((r3 + xyz[2]) / (r3 - xyz[2]));
   return eta;
@@ -413,7 +353,6 @@ double Transform::GetEta(float* xyz)
 
 void Transform::XYZtoRPhiEta(float* rpe, float* xyz)
 {
-  // transform xyz into rpe
   rpe[0] = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
   rpe[1] = atan2(xyz[1], xyz[0]);
   rpe[2] = 0.5 * log((rpe[0] + xyz[2]) / (rpe[0] - xyz[2]));
@@ -421,7 +360,6 @@ void Transform::XYZtoRPhiEta(float* rpe, float* xyz)
 
 double Transform::GetEta(int slice, int padrow, int pad, int time)
 {
-  // get eta
   float xyz[3];
   int sector, row;
   Slice2Sector(slice, padrow, sector, row);
@@ -432,14 +370,12 @@ double Transform::GetEta(int slice, int padrow, int pad, int time)
 
 double Transform::GetPhi(float* xyz)
 {
-  // get phi
   double phi = atan2(xyz[1], xyz[0]);
   return phi;
 }
 
 bool Transform::Slice2Sector(int slice, int slicerow, int& sector, int& row)
 {
-  // slice to sector number
   if (slicerow < 0 && slicerow >= fgNRow) {
     cout << "Wrong slicerow " << slicerow << endl;
     return false;
@@ -462,7 +398,6 @@ bool Transform::Slice2Sector(int slice, int slicerow, int& sector, int& row)
 
 bool Transform::Sector2Slice(int& slice, int sector)
 {
-  // sector to slice
   if (sector < 0 || sector >= fgNSector) {
     cout << "Wrong sector " << sector << endl;
     return false;
@@ -475,7 +410,6 @@ bool Transform::Sector2Slice(int& slice, int sector)
 
 bool Transform::Sector2Slice(int& slice, int& slicerow, int sector, int row)
 {
-  // sector to slice
   if (sector < 0 || sector >= fgNSector) {
     cout << "Wrong sector " << sector << endl;
     return false;
@@ -506,17 +440,15 @@ bool Transform::Sector2Slice(int& slice, int& slicerow, int sector, int row)
 
 double Transform::GetMaxY(int slicerow)
 {
-  // get maximum y value (for slice 0)
-  if (slicerow < fgNRowLow)
+  if (slicerow < fgNRowLow) {
     return fgPadPitchWidthLow * fgNPads[slicerow] / 2;
-
-  else
+  } else {
     return fgPadPitchWidthUp * fgNPads[slicerow] / 2;
+  }
 }
 
 double Transform::Row2X(int slicerow)
 {
-  // slicerow to X value (slice 0)
   if (slicerow < 0 || slicerow >= fgNRow) {
     cout << "Wrong slicerow " << slicerow << endl;
     return 0;
@@ -526,18 +458,17 @@ double Transform::Row2X(int slicerow)
 
 double Transform::GetZFast(int slice, int time, float vertex)
 {
-  // get z value
   double z = fgZWidth * time - fgZOffset;
-  if (slice < 18)
+  if (slice < 18) {
     z = fgZLength - z - vertex;
-  else
+  } else {
     z = z - fgZLength - vertex;
+  }
   return z;
 }
 
 void Transform::Local2Global(float* xyz, int slice)
 {
-  // Transformation to global coordinate system
   float x0 = xyz[0];
   float y0 = xyz[1];
 
@@ -548,7 +479,6 @@ void Transform::Local2Global(float* xyz, int slice)
 
 void Transform::Local2GlobalAngle(float* angle, int slice)
 {
-  // get angle global
   angle[0] = fmod(angle[0] + (slice + fgNRotShift) * (2 * fgkPi / 18), 2 * fgkPi);
 }
 

@@ -2,12 +2,6 @@
 /// \brief Definition of a cluster loader
 /// \author Charis Kouzinopoulos
 
-#include "AliHLTTPCTrackGeometry.h"
-#include "AliHLTTPCClusterDataFormat.h"
-#include "AliHLTTPCSpacePointContainer.h"
-#include "AliHLTComponent.h"
-#include "AliHLTTPCDefinitions.h"
-
 #include "TCanvas.h"
 #include "TH2F.h"
 #include "TGraph.h"
@@ -16,32 +10,9 @@
 #include "boost/filesystem.hpp"
 
 #include "Accumulator.h"
-#include "HoughTransformerRow.h"
-
-// FIXME: convert float into double for bigger precision
-// Information for each stored cluster
-struct clusterDataFormat {
-  UInt_t mID;
-  UInt_t mCharge;
-
-  // The ALICE TPC detector consists out of 2 x 18 = 36 slices (18 slices at the top, 18 slices at the bottom). Each
-  // slices consists out of 2 inner patches (or partitions) and 4 outer patches = 6 patches. So we have a total of 216
-  // patches.
-  UInt_t mTPCSlice;
-  UInt_t mTPCPartition;
-
-  UChar_t mPadRow;
-
-  Double_t mX;
-  Double_t mY;
-  Double_t mZ;
-
-  Double_t mAlpha;
-  Double_t mBeta;
-  Double_t mEta;
-
-  UInt_t mEtaSlice;
-};
+#include "ClusterCollection.h"
+#include "TransformerRow.h"
+#include "Transform.h"
 
 // Information for each reconstructed track
 struct trackDataFormat {
@@ -73,8 +44,6 @@ struct houghPadParameters {
   Int_t fLastBin;      // Last alpha2 bin to be filled
 };
 
-std::unique_ptr<AliHLTTPCSpacePointContainer> spacepoints;
-std::vector<clusterDataFormat> clusterData;
 std::vector<trackDataFormat> trackData;
 std::vector<accumulatorDataFormat> accumulatorData;
 
@@ -87,6 +56,8 @@ Int_t numberOfPadRows[6] = { 30, 33, 28, 26, 23, 19 };
 Int_t numberOfRows = 159;
 
 AliceO2::Hough::Accumulator** parameterSpace;
+
+AliceO2::Hough::ClusterCollection* clusterCollection;
 
 Double_t fgX[159] = { 85.195,  85.945,  86.695,  87.445,  88.195,  88.945,  89.695,  90.445,  91.195,  91.945,  92.695,
                       93.445,  94.195,  94.945,  95.695,  96.445,  97.195,  97.945,  98.695,  99.445,  100.195, 100.945,
@@ -134,7 +105,7 @@ int thetalphaMax;
 
 // Project parameters
 int houghThreshold = 53;
-int etaResolution = 20;
+int etaResolution = 100;
 int thetaResolution = 180;
 
 Double_t padPitchWidthLow = 0.4;
@@ -204,44 +175,6 @@ void setTrackParameters(UInt_t etaSlice, Float_t alpha1, Float_t beta1, Float_t 
   track.mAlpha2 = alpha2;
   track.mBeta2 = beta2;
   trackData.push_back(track);
-}
-
-UInt_t getClusterID(int clusterNumber) { return clusterData[clusterNumber].mID; }
-UInt_t getClusterCharge(int clusterNumber) { return clusterData[clusterNumber].mCharge; }
-
-UInt_t getClusterSlice(int clusterNumber) { return clusterData[clusterNumber].mTPCSlice; }
-UInt_t getClusterPartition(int clusterNumber) { return clusterData[clusterNumber].mTPCPartition; }
-
-UChar_t getClusterPadRow(int clusterNumber) { return clusterData[clusterNumber].mPadRow; }
-
-Double_t getClusterX(int clusterNumber) { return clusterData[clusterNumber].mX; }
-Double_t getClusterY(int clusterNumber) { return clusterData[clusterNumber].mY; }
-Double_t getClusterZ(int clusterNumber) { return clusterData[clusterNumber].mZ; }
-
-Double_t getClusterAlpha(int clusterNumber) { return clusterData[clusterNumber].mAlpha; }
-Double_t getClusterBeta(int clusterNumber) { return clusterData[clusterNumber].mBeta; }
-Double_t getClusterEta(int clusterNumber) { return clusterData[clusterNumber].mEta; }
-Int_t getClusterEtaSlice(int clusterNumber) { return clusterData[clusterNumber].mEtaSlice; }
-
-void setClusterAlpha(int clusterNumber, Double_t alpha) { clusterData[clusterNumber].mAlpha = alpha; }
-void setClusterBeta(int clusterNumber, Double_t beta) { clusterData[clusterNumber].mBeta = beta; }
-void setClusterEta(int clusterNumber, Double_t eta) { clusterData[clusterNumber].mEta = eta; }
-void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice) { clusterData[clusterNumber].mEtaSlice = etaSlice; }
-
-void setClusterParameters(UInt_t clusterID, Double_t x, Double_t y, Double_t z, UInt_t charge, UChar_t padRow,
-                          UInt_t tpcSlice, UInt_t tpcPartition)
-{
-  clusterDataFormat data;
-  data.mID = clusterID;
-  data.mCharge = charge;
-  data.mTPCSlice = tpcSlice;
-  data.mTPCPartition = tpcPartition;
-  data.mPadRow = padRow;
-  data.mX = x;
-  data.mY = y;
-  data.mZ = z;
-
-  clusterData.push_back(data);
 }
 
 /// Returns the first row per partition

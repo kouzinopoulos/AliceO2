@@ -9,63 +9,88 @@
 namespace AliceO2 {
 namespace Hough {
 
+/// Transformation class for ALICE TPC.
+/// Class which contains all detector specific parameters for the TPC and different useful functions for coordinate
+/// transforms. The class is completely static, which means that no object needs to be instantiated. Function calls
+/// should then be done like, e.g.: double eta = Transform::GetEta(xyz);
+/// IMPORTANT: If used as is, default detector parameters will be used and you really have to make sure that these
+/// correspond to the AliROOT version you are currently working on. You should therefore always initialize the
+/// parameters by
+///
+/// Transform::Init(path);
+///
+/// where path is a char*, giving the path to where file containing the detector parameter is located. This file should
+/// be called "l3transform.config", and can be created with the function MakeInitFile.
+/// You can also force reading the parameters from a AliTPCParam object by setting the flag;
+///
+/// Transform::Init(path,true);
+///
+/// where path is a char* either providing the rootfile name containing the geometry or the path to the rootfile which
+/// should then be called alirunfile.root. Note that for both of these cases you have to compile with USEPACKAGE=ALIROOT
+/// set (see level3code/Makefile.conf).
+/// Currently, there are 4 versions of the Transformer:
+///             fVersion==kValiroot: ALIROOT-head compatible
+///             fVersion==kVcosmics: Cosmics data run (2003) compatible
+///             fVersion==kVdefault: means no config file has been loaded
+///             fVersion==kVdeprecated: dont use old (before July 2003) style of transformer
+
 class Transform {
 
 public:
   enum VersionType { kVdefault = 0, kVdeprecated = 1, kValiroot = 10, kVcosmics = 100 };
 
 private:
-  static const double fgkBFACT;            // bfield
-  static const double fgkPi;               // pi
-  static const double fgkPi2;              // 2pi
-  static const double fgk2Pi;              // pi/2
-  static const double fgkAnodeWireSpacing; // anode wire spacing
-  static const double fgkToDeg;            // rad to deg
+  static const double fgkBFACT;            ///< bfield
+  static const double fgkPi;               ///< pi
+  static const double fgkPi2;              ///< 2pi
+  static const double fgk2Pi;              ///< pi/2
+  static const double fgkAnodeWireSpacing; ///< anode wire spacing
+  static const double fgkToDeg;            ///< rad to deg
 
-  static int fgNPatches;   // 6 (dont change this)
-  static int fgRows[6][2]; // rows per patch
-  static int fgNRows[6];   // rows per patch
+  static int fgNPatches;   ///< 6 (dont change this)
+  static int fgRows[6][2]; ///< rows per patch
+  static int fgNRows[6];   ///< rows per patch
 
-  static double fgBField;           // field
-  static double fgBFieldFactor;     // field
-  static double fgSolenoidBField;   // field
-  static int fgNTimeBins;           // ntimebins
-  static int fgNRowLow;             // nrows
-  static int fgNRowUp;              // nrows
-  static int fgNRowUp1;             // nrows
-  static int fgNRowUp2;             // nrows
-  static int fgNSectorLow;          // nsector
-  static int fgNSectorUp;           // nsector
-  static int fgSlice2Sector[36][2]; // nslice
-  static int fgSector2Slice[72];    // nslice
-  static int fgSectorLow[72];       // nsector
-  static double fgPadPitchWidthLow; // pad pitch
-  static double fgPadPitchWidthUp;  // pad pitch
-  static double fgZWidth;           // width
-  static double fgZSigma;           // sigma
-  static double fgZLength;          // length
-  static double fgZOffset;          // offset
-  static int fgNSector;             // 72  (dont change this)
-  static int fgNSlice;              // 36  (dont change this)
-  static int fgNRow;                // 159 (dont change this)
-  static double fgNRotShift;        // Rotation shift (eg. 0.5 for 10 degrees)
-  static int fgNPads[159];          // fill this following Init and fVersion
-  static double fgX[159];           // X position in local coordinates
-  static int fgVersion;             // flags the version
-  static double fgDiffT;            // Transversal diffusion constant
-  static double fgDiffL;            // Longitudinal diffusion constant
-  static double fgOmegaTau;         // ExB effects
-  static double fgInnerPadLength;   // innner pad length
-  static double fgOuter1PadLength;  // outer pad length
-  static double fgOuter2PadLength;  // outer pad length
-  static double fgInnerPRFSigma;    // inner pad response function
-  static double fgOuter1PRFSigma;   // outer pad response function
-  static double fgOuter2PRFSigma;   // outer pad response function
-  static double fgTimeSigma;        // Minimal longitudinal width
-  static int fgADCSat;              // ADC Saturation (1024 = 10 bit)
-  static int fgZeroSup;             // Zero suppression threshold
-  static double fgCos[36];          // stores the cos value for local to global rotations
-  static double fgSin[36];          // stores the sin value for local to global rotations
+  static double fgBField;           ///< field
+  static double fgBFieldFactor;     ///< field
+  static double fgSolenoidBField;   ///< field
+  static int fgNTimeBins;           ///< ntimebins
+  static int fgNRowLow;             ///< nrows
+  static int fgNRowUp;              ///< nrows
+  static int fgNRowUp1;             ///< nrows
+  static int fgNRowUp2;             ///< nrows
+  static int fgNSectorLow;          ///< nsector
+  static int fgNSectorUp;           ///< nsector
+  static int fgSlice2Sector[36][2]; ///< nslice
+  static int fgSector2Slice[72];    ///< nslice
+  static int fgSectorLow[72];       ///< nsector
+  static double fgPadPitchWidthLow; ///< pad pitch
+  static double fgPadPitchWidthUp;  ///< pad pitch
+  static double fgZWidth;           ///< width
+  static double fgZSigma;           ///< sigma
+  static double fgZLength;          ///< length
+  static double fgZOffset;          ///< offset
+  static int fgNSector;             ///< 72  (dont change this)
+  static int fgNSlice;              ///< 36  (dont change this)
+  static int fgNRow;                ///< 159 (dont change this)
+  static double fgNRotShift;        ///< Rotation shift (eg. 0.5 for 10 degrees)
+  static int fgNPads[159];          ///< fill this following Init and fVersion
+  static double fgX[159];           ///< X position in local coordinates
+  static int fgVersion;             ///< flags the version
+  static double fgDiffT;            ///< Transversal diffusion constant
+  static double fgDiffL;            ///< Longitudinal diffusion constant
+  static double fgOmegaTau;         ///< ExB effects
+  static double fgInnerPadLength;   ///< innner pad length
+  static double fgOuter1PadLength;  ///< outer pad length
+  static double fgOuter2PadLength;  ///< outer pad length
+  static double fgInnerPRFSigma;    ///< inner pad response function
+  static double fgOuter1PRFSigma;   ///< outer pad response function
+  static double fgOuter2PRFSigma;   ///< outer pad response function
+  static double fgTimeSigma;        ///< Minimal longitudinal width
+  static int fgADCSat;              ///< ADC Saturation (1024 = 10 bit)
+  static int fgZeroSup;             ///< Zero suppression threshold
+  static double fgCos[36];          ///< stores the cos value for local to global rotations
+  static double fgSin[36];          ///< stores the sin value for local to global rotations
 
 public:
   virtual ~Transform() {}
@@ -163,18 +188,34 @@ public:
   static double ToRad() { return 1. / fgkToDeg; }
   static double ToDeg() { return fgkToDeg; }
 
+  /// Returns the first row per patch
   static int GetFirstRow(int patch);
+
+  /// Returns the last row per patch
   static int GetLastRow(int patch);
+
+  /// Returns the first row per patch
   static int GetFirstRowOnDDL(int patch);
+
+  /// Returns the last row per patch
   static int GetLastRowOnDDL(int patch);
   static int GetNRows(int patch);
+
+  /// Returns patch for the given padrow
   static int GetPatch(int padrow);
+
+  /// Returns the number of rows per patch
   static int GetNRows() { return fgNRow; }
   static int GetNRowLow() { return fgNRowLow; }
   static int GetNRowUp1() { return fgNRowUp1; }
   static int GetNRowUp2() { return fgNRowUp2; }
+
+  /// Returns the padrow number corresponding to cartesian _local_ x value
   static int GetPadRow(float x);
+
   static int GetNPatches() { return fgNPatches; }
+
+  /// Returns the number of pads per row
   static int GetNPads(int row);
   static int GetNTimeBins() { return fgNTimeBins; }
   static double GetBField() { return fgBField; }
@@ -186,16 +227,32 @@ public:
   static int GetVersion() { return fgVersion; }
   static double GetPadPitchWidthLow() { return fgPadPitchWidthLow; }
   static double GetPadPitchWidthUp() { return fgPadPitchWidthUp; }
+
+  /// Returns the pad patch width for the given patch
   static double GetPadPitchWidth(int patch);
   static double GetZWidth() { return fgZWidth; }
   static double GetZLength() { return fgZLength; }
   static double GetZOffset() { return fgZOffset; }
   static double GetDiffT() { return fgDiffT; }
   static double GetDiffL() { return fgDiffL; }
+
+  /// Calculates the expected transverse cluster width as a function of drift distance and crossing angle.
+  /// \param z local z-coordinate of cluster
+  /// \param angle track crossing angle with normal to padrow plane
+  /// return value = sigma^2 (cartesian coordinates)
   static double GetParSigmaY2(int padrow, float z, float angle);
+
+  /// Calculates the expected longitudinal cluster width as a function of drift distance and track crossing angle.
+  /// \param z local z-coordinate of cluster
+  /// \param tgl tan(dipangle)
+  /// return value = sigma^2 (cartesian coordinates)
   static double GetParSigmaZ2(int padrow, float z, float tgl);
   static double GetOmegaTau() { return fgOmegaTau; }
+
+  /// Returns the pad length for the given padrow
   static double GetPadLength(int padrow);
+
+  /// Returns sigma of pad response function for the given padrow
   static double GetPRFSigma(int padrow);
   static double GetTimeSigma() { return fgTimeSigma; }
   static double GetZSigma() { return fgZSigma; }
@@ -206,28 +263,43 @@ public:
   static int GetNSectorLow() { return fgNSectorLow; }
   static int GetNSectorUp() { return fgNSectorUp; }
 
+  // Slice to sector number
   static bool Slice2Sector(int slice, int slicerow, int& sector, int& row);
+
+  /// Sector number to slice
   static bool Sector2Slice(int& slice, int sector);
+
+  /// Sector number to slice
   static bool Sector2Slice(int& slice, int& slicerow, int sector, int row);
 
+  /// Slicerow to X value (slice 0)
   static double Row2X(int slicerow);
+
+  /// Returns the maximum y value (for slice 0)
   static double GetMaxY(int slicerow);
+
+  /// Returns Eta
   static double GetEta(float* xyz);
+
+  /// Returns Eta
   static double GetEta(int slice, int padrow, int pad, int time);
+
+  /// Returns phi
   static double GetPhi(float* xyz);
+
+  /// Returns z
   static double GetZFast(int slice, int time, float vertex = 0.);
 
+  /// Transforms xyz into rpe
   static void XYZtoRPhiEta(float* rpe, float* xyz);
+
+  /// Transformation to global coordinate system
   static void Local2Global(float* xyz, int slice);
+
+  /// Returns angle global
   static void Local2GlobalAngle(float* angle, int slice);
   static void Global2LocalAngle(float* angle, int slice);
 
-  // we have 3 different system: Raw   : row, pad, time
-  //                            Local : x,y and global z
-  //                            Global: global x,y and global z
-  // the methods with HLT in the name differ from the other
-  // as you specify slice and slicerow, instead of sector
-  // and sector row. In that way we safe "a few ifs"
   static void Raw2Local(float* xyz, int sector, int row, float pad, float time);
   static void RawHLT2Local(float* xyz, int slice, int slicerow, float pad, float time);
   static void Raw2Local(float* xyz, int sector, int row, int pad, int time);
@@ -246,7 +318,6 @@ public:
   static void Global2HLT(float* xyz, int slice, int slicerow);
 };
 
-typedef Transform AliL3Transform; // for backward compatibility
 }
 }
 
