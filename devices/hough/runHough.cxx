@@ -513,6 +513,7 @@ int main(int argc, char** argv)
   conformalMapping2();
   determineMinMaxAlphaBeta(totalNumberOfClusters);
   drawConformalMappingClusters1D(15, totalNumberOfClusters);
+  drawCartesianClusters(totalNumberOfClusters);
 
   // printData(totalNumberOfClusters);
 
@@ -543,6 +544,8 @@ int main(int argc, char** argv)
       }
       // Resets all the histograms. Should be done when processing new slice
       row.Reset();
+
+      exit(0);
     }
   }
 

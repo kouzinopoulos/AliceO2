@@ -20,8 +20,9 @@ struct clusterDataFormat {
   UInt_t mID;
   UInt_t mCharge;
 
-  // The ALICE TPC detector consists out of 2 x 18 = 36 slices (18 slices at the top, 18 slices at the bottom). Each
-  // slices consists out of 2 inner patches (or partitions) and 4 outer patches = 6 patches for aa total of 216 patches.
+  // The ALICE TPC detector consists out of 2 x 18 = 36 slices (or sectors?) (18 slices at the top, 18 slices at the bottom). Each
+  // slice consists of 2 inner patches (or partitions) and 4 outer patches = 6 patches for a total of 216 patches.
+  // Moreover, there are 15488 (5504+9984) pads and 159 (63+64+32) pad rows per sector for a total of 557568 (36x15488) pads.
   UInt_t mTPCSlice;
   UInt_t mTPCPartition;
 

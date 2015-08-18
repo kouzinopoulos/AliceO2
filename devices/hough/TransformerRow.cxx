@@ -228,11 +228,14 @@ struct AliHLTTrackLength {
 /// xmin xmax ymin ymax = histogram limits in X and Y
 void TransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, Int_t nybin, Float_t ymin, Float_t ymax)
 {
+  cout << "fLastTransformer: " << fLastTransformer << endl;
   if (fLastTransformer) {
     SetTransformerArrays((TransformerRow*)fLastTransformer);
     return;
   }
   fParamSpace = new Accumulator* [GetNEtaSegments()];
+
+  cout << "GetNEtaSegments(): " << GetNEtaSegments() << endl;
 
   for (Int_t i = 0; i < GetNEtaSegments(); i++) {
     fParamSpace[i] = new Accumulator(nxbin, xmin, xmax, nybin, ymin, ymax);
@@ -254,7 +257,11 @@ void TransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, I
   }
 #endif
   Accumulator* hist = fParamSpace[0];
+
+
   Int_t ncells = (hist->GetNbinsX() + 2) * (hist->GetNbinsY() + 2);
+  cout << "ncells: " << ncells << endl;
+
   if (!fGapCount) {
     cout << "Transformer: Allocating " << GetNEtaSegments() * ncells * sizeof(UChar_t) << " bytes to fGapCount" << endl;
     fGapCount = new UChar_t* [GetNEtaSegments()];
@@ -262,6 +269,7 @@ void TransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, I
       fGapCount[i] = new UChar_t[ncells];
     }
   }
+
   if (!fCurrentRowCount) {
     cout << "Transformer: Allocating " << GetNEtaSegments() * ncells * sizeof(UChar_t) << " bytes to fCurrentRowCount"
          << endl;
@@ -285,6 +293,8 @@ void TransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, I
     }
   }
   Int_t ncellsy = hist->GetNbinsY() + 2;
+  cout << "ncellsy: " << ncellsy << endl;
+
   if (!fNextRow) {
     cout << "Transformer: Allocating " << GetNEtaSegments() * ncellsy * sizeof(UChar_t) << " bytes to fNextRow" << endl;
     fNextRow = new UChar_t* [GetNEtaSegments()];
@@ -313,23 +323,41 @@ void TransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, I
     Int_t nxgrid = (hist->GetNbinsX() + 3) / 2 + 1;
     Int_t nygrid = hist->GetNbinsY() + 3;
 
+    cout << "xmin: " << xmin << " xmax: " << xmax << " xmiddle: " << xmiddle << " ymin: " << ymin << " ymax: " << ymax << " nxbins: " << nxbins << " nxgrid: " << nxgrid << " nygrid: " << nygrid << endl;
     AliHLTTrackLength* tracklength = new AliHLTTrackLength[nxgrid * nygrid];
     memset(tracklength, 0, nxgrid * nygrid * sizeof(AliHLTTrackLength));
 
+    /*cout << "fTrackNRows[0 + 0 * 10002] = 255" << endl;
+    cout << "fTrackNRows[1 + 0 * 10002] = 255" << endl;
+    cout << "..." << endl;
+    cout << "fTrackNRows[5000 + 0 * 10002] = 255" << endl;
+    cout << "fTrackNRows[0 + 1 * 10002] = 255" << endl;
+    cout << "..." << endl;
+    cout << "fTrackNRows[5000 + 181 * 10002] = 255" << endl;
+*/
     for (Int_t ybin = ymin - 1; ybin <= (ymax + 1); ybin++) {
       for (Int_t xbin = xmin - 1; xbin <= xmiddle; xbin++) {
+
+        cout << "========== " << "ybin: " << ybin << " " << " xbin: " << xbin << " ==========" << endl;
+        cout << " fTrackNRows[" << xbin << " + " << ybin << " * " << nxbins << "] = 255" << endl;
         fTrackNRows[xbin + ybin * nxbins] = 255;
         for (Int_t deltay = 0; deltay <= 1; deltay++) {
           for (Int_t deltax = 0; deltax <= 1; deltax++) {
+
+            cout << "====== " << "deltay: " <<  deltay << " " << " deltax: " << deltax << " ======" << endl;
 
             AliHLTTrackLength* curtracklength = &tracklength[(xbin + deltax) + (ybin + deltay) * nxgrid];
             UInt_t maxfirstrow = 0;
             UInt_t maxlastrow = 0;
             Float_t maxtrackpt = 0;
+
+            cout << "maxfirstrow: " << maxfirstrow << " maxlastrow: " << maxlastrow << " maxtrackpt: " << maxtrackpt << endl;
             if (curtracklength->fIsFilled) {
               maxfirstrow = curtracklength->fFirstRow;
               maxlastrow = curtracklength->fLastRow;
               maxtrackpt = curtracklength->fTrackPt;
+              cout << "=== Current track is filled! ===" << endl;
+              cout << "maxfirstrow: " << maxfirstrow << " maxlastrow: " << maxlastrow << " maxtrackpt: " << maxtrackpt << endl;
             } else {
               Float_t xtrack = hist->GetPreciseBinCenterX((Float_t)xbin + 0.5 * (Float_t)(2 * deltax - 1));
               Float_t ytrack = hist->GetPreciseBinCenterY((Float_t)ybin + 0.5 * (Float_t)(2 * deltay - 1));
@@ -338,6 +366,10 @@ void TransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, I
               Float_t kappa = 2.0 * (xtrack * cos(psi) - fgBeta1 * sin(psi));
               track.SetTrackParameters(kappa, psi, 1);
               maxtrackpt = track.GetPt();
+
+              cout << "=== Current track is not filled! ===" << endl;
+              cout << "xtrack: " << xtrack << " ytrack: " << ytrack << " psi: " << psi << " kappa: " << kappa << " maxtrackpt: " << maxtrackpt << " SolenoidField: " << 0.9 * 0.1 * Transform::GetSolenoidField() << endl;
+
               if (maxtrackpt < 0.9 * 0.1 * Transform::GetSolenoidField()) {
                 maxfirstrow = maxlastrow = 0;
                 curtracklength->fIsFilled = true;
@@ -345,6 +377,7 @@ void TransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, I
                 curtracklength->fLastRow = maxlastrow;
                 curtracklength->fTrackPt = maxtrackpt;
               } else {
+
                 Bool_t firstrow = false;
                 UInt_t curfirstrow = 0;
                 UInt_t curlastrow = 0;
@@ -352,6 +385,8 @@ void TransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, I
                 Double_t centerx = track.GetCenterX();
                 Double_t centery = track.GetCenterY();
                 Double_t radius = track.GetRadius();
+
+                cout << "centerx: " << centerx << " centery: " << centery << " radius: " << radius << endl;
 
                 for (Int_t j = Transform::GetFirstRow(0); j <= Transform::GetLastRow(5); j++) {
                   Float_t hit[3];
@@ -368,6 +403,8 @@ void TransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, I
                   Double_t y1 = centery + aa2;
                   Double_t y2 = centery - aa2;
                   hit[1] = y1;
+
+                  cout << "aa2: " << aa2 << " y1: " << y1 << " y2: " << y2 << " hit[1]: " << hit[1] << " maxtrackpt: " << maxtrackpt << endl;
 
                   if (fabs(y2) < fabs(y1)) {
                     hit[1] = y2;
@@ -461,6 +498,7 @@ void TransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, I
     Int_t firstbin = hist->GetFirstYbin();
     Int_t lastbin = hist->GetLastYbin();
     for (Int_t i = Transform::GetFirstRow(0); i <= Transform::GetLastRow(5); i++) {
+      cout << "========== " << "Pad row: " << i << " ==========" << endl;
       Int_t npads = Transform::GetNPads(i);
       Int_t ipatch = Transform::GetPatch(i);
       Double_t padpitch = Transform::GetPadPitchWidth(ipatch);
@@ -471,6 +509,9 @@ void TransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, I
       fEndPadParams[i] = new AliHLTPadHoughParams[npads];
       fLUTr[i] = new Float_t[npads];
       for (Int_t pad = 0; pad < npads; pad++) {
+
+        cout << "=== " << "Pad: " << pad << " ===" << endl;
+
         Float_t y = (pad - 0.5 * (npads - 1)) * padpitch;
         fLUTr[i][pad] = sqrt(x2 + y * y);
         Float_t starty = (pad - 0.5 * npads) * padpitch;
@@ -487,10 +528,24 @@ void TransformerRow::CreateHistograms(Int_t nxbin, Float_t xmin, Float_t xmax, I
         Float_t b2 = (xoverr2 - beta1) / (xoverr2 - beta2);
 
         Float_t alpha1 = (a1 * startyoverr1 + b1 * ymin - xmin) / xbin;
+
+
+
+
+
         Float_t deltaalpha1 = b1 * histbin / xbin;
         if (b1 < 0) {
           alpha1 += deltaalpha1;
         }
+
+        cout << "beta1: " << beta1 << " beta2: " << beta2 << " beta1minusbeta2: " << beta1minusbeta2 << " ymin: " << ymin << " histbin: " << histbin
+             << "xmin: " << xmin << " xmax: " << xmax << " xbin: " << xbin << " firstbinx: " << firstbinx << " lastbinx: " << lastbinx
+             << "nbinx: " << nbinx << " firstbin: " << firstbin << " lastbin: " << lastbin << " npads: " << npads << " ipatch: " << ipatch
+             << "padpitch: " << padpitch << " x: " << x << " x2: " << x2 << " y: " << y << " fLUTr[i][pad]: " << fLUTr[i][pad]
+             << "starty: " << starty << " r1: " << r1 << " xoverr1: " << xoverr1 << " startyoverr1: " << startyoverr1 << " endy: " << endy
+             << "r2: " << r2 << " xoverr2: " << xoverr2 << " endyoverr2: " << endyoverr2 << " a1: " << a1 << " b1: " << b1
+             << "a2: " << a2 << " b2: " << b2 << " alpha1: " << alpha1 << " deltaalpha1: " << deltaalpha1 << endl;
+
         Float_t alpha2 = (a2 * endyoverr2 + b2 * ymin - xmin) / xbin;
         Float_t deltaalpha2 = b2 * histbin / xbin;
         if (b2 >= 0) {
