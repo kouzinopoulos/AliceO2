@@ -20,12 +20,13 @@ link_directories(${LINK_DIRECTORIES})
 
 set(SRCS
   Accumulator.cxx
-  ClusterCollection.cxx
   BaseTransformer.cxx
-  TransformerRow.cxx
+  ClusterCollection.cxx
+  Hough.cxx
   HoughTrack.cxx
-  Transform.cxx
   Track.cxx
+  Transform.cxx
+  TransformerRow.cxx
 )
 
 #add_definitions( -Ddo_mc )

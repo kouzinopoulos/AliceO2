@@ -45,8 +45,7 @@ public:
   {
     if (update) {
       fWeight += i;
-    }
-    else {
+    } else {
       fWeight = i;
     }
   }
@@ -77,7 +76,6 @@ private:
 
   float fBinX, fBinY, fSizeX, fSizeY; ///< Size and position of the hough space peak
 };
-
 }
 }
 

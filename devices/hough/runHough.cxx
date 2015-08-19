@@ -8,6 +8,8 @@
 
 #include "runHough.h"
 
+using namespace AliceO2::Hough;
+
 // fgBeta1 and fgBeta2 are two curves which define the Hough space
 Float_t fgBeta1 = 1.0 / Row2X(84);
 Float_t fgBeta2 = 1.0 / (Row2X(158) * (1.0 + tan(Pi() * 10 / 180) * tan(Pi() * 10 / 180)));
@@ -281,7 +283,7 @@ void conformalMapping(int totalNumberOfClusters)
 
 void conformalMapping2()
 {
-  for (UInt_t padRow = 0; padRow < AliceO2::Hough::Transform::GetNRows(); padRow++) {
+  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
     for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
          clusterNumber++) {
       Float_t x = clusterCollection->getClusterX(padRow, clusterNumber);
@@ -479,7 +481,7 @@ int main(int argc, char** argv)
 
   int totalNumberOfClusters = 0, totalNumberOfDataFiles = 0;
 
-  clusterCollection = new AliceO2::Hough::ClusterCollection();
+  clusterCollection = new ClusterCollection();
 
   // Traverse the filesystem and execute processData for each cluster file found
   if (boost::filesystem::exists(dataPath) && boost::filesystem::is_directory(dataPath)) {
@@ -499,7 +501,7 @@ int main(int argc, char** argv)
 
   cout << "Added " << totalNumberOfClusters << " clusters from " << totalNumberOfDataFiles << " data files." << endl;
 
-  for (int i = 0; i < AliceO2::Hough::Transform::GetNRows(); i++) {
+  for (int i = 0; i < Transform::GetNRows(); i++) {
     cout << clusterCollection->getNumberOfClustersPerPadRow(i) << " Clusters for PadRow " << i << endl;
   }
 
@@ -517,38 +519,69 @@ int main(int argc, char** argv)
 
   // printData(totalNumberOfClusters);
 
-  // FIXME: find the correct values here
-  // AliceO2::Hough::TransformerRow row(Int_t slice, Int_t patch, Int_t netasegments, Bool_t /*DoMC*/, Float_t
-  // zvertex);
-  for (UInt_t slice = 0; slice < AliceO2::Hough::Transform::GetNSlice(); slice++) {
-    for (UInt_t patch = 0; patch < AliceO2::Hough::Transform::GetNPatches(); patch++) {
-      AliceO2::Hough::TransformerRow row(slice, patch, etaResolution);
+  Float_t ptmin = 0.1 * Transform::GetSolenoidField();
+  // FIXME: find the correct value for zvertex
+  // Float_t zvertex = GetZ();
+  Float_t zvertex = 0;
 
-      // Allocate space for the accumulator and determine initial values. This must be done before executing the TransformCircle method
-      row.CreateHistograms(rResolution, xMin, xMax, thetaResolution, yMin, yMax);
+  Hough* hough = new Hough();
 
-      // Perform the actual transformation
-      row.TransformCircle(clusterCollection);
+  hough->SetThreshold(4);
+  hough->CalcTransformerParams(ptmin);
+  hough->SetPeakThreshold(70, -1);
+  hough->Init("./", kFALSE, 100, kFALSE, 4, 0, 0, zvertex);
+  hough->SetAddHistograms();
 
-      cout << "Number of Eta Segments: " << row.GetNEtaSegments() << " - etaResolution: " << etaResolution << endl;
-
-      for (Int_t segment = 0; segment < row.GetNEtaSegments(); segment++) {
-        // Get a pointer for the accumulator for each eta slice
-        AliceO2::Hough::Accumulator* accumulatorPointer = row.GetHistogram(segment);
-
-        if (accumulatorPointer->GetNEntries() > 0) {
-          cout << "Number of entries in the Accumulator for eta segment " << segment << ": "
-               << accumulatorPointer->GetNEntries() << endl;
-          exit(0);
-        }
-      }
-      // Resets all the histograms. Should be done when processing new slice
-      row.Reset();
-
-      exit(0);
-    }
+  for (Int_t slice = 0; slice <= 35; slice++) {
+    //     hough->ReadData(slice,iEvent);
+    hough->Transform(0, clusterCollection);
+//    hough->AddAllHistogramsRows();
+//    hough->FindTrackCandidatesRow();
+//    hough->AddTracks();
   }
 
+  /*
+    for (UInt_t patch = 0; patch < AliceO2::Hough::Transform::GetNPatches(); patch++) {
+
+      fHoughTransformer[patch] = new AliceO2::Hough::TransformerRow(0, patch, fNEtaSegments);
+      fHoughTransformer[patch]->SetLastTransformer(lasttransformer);
+      lasttransformer = fHoughTransformer[patch];
+
+      fHoughTransformer[patch]->CreateHistograms()
+    }
+  */
+
+  /*
+    for (UInt_t slice = 0; slice < AliceO2::Hough::Transform::GetNSlice(); slice++) {
+      for (UInt_t patch = 0; patch < AliceO2::Hough::Transform::GetNPatches(); patch++) {
+        AliceO2::Hough::TransformerRow row(slice, patch, etaResolution);
+
+        // Allocate space for the accumulator and determine initial values. This must be done before executing the
+    TransformCircle method
+        row.CreateHistograms(rResolution, xMin, xMax, thetaResolution, yMin, yMax);
+
+        // Perform the actual transformation
+        row.TransformCircle(clusterCollection);
+
+        cout << "Number of Eta Segments: " << row.GetNEtaSegments() << " - etaResolution: " << etaResolution << endl;
+
+        for (Int_t segment = 0; segment < row.GetNEtaSegments(); segment++) {
+          // Get a pointer for the accumulator for each eta slice
+          AliceO2::Hough::Accumulator* accumulatorPointer = row.GetHistogram(segment);
+
+          if (accumulatorPointer->GetNEntries() > 0) {
+            cout << "Number of entries in the Accumulator for eta segment " << segment << ": "
+                 << accumulatorPointer->GetNEntries() << endl;
+            exit(0);
+          }
+        }
+        // Resets all the histograms. Should be done when processing new slice
+        row.Reset();
+
+        exit(0);
+      }
+    }
+  */
   /*
     AliceO2::Hough::TransformerRow row(0, 0, etaResolution);
 

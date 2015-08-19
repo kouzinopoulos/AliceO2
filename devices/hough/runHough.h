@@ -10,7 +10,9 @@
 #include "boost/filesystem.hpp"
 
 #include "Accumulator.h"
+#include "BaseTransformer.h"
 #include "ClusterCollection.h"
+#include "Hough.h"
 #include "TransformerRow.h"
 #include "Transform.h"
 

@@ -19,9 +19,7 @@ HoughTrack::HoughTrack() : Track()
   ComesFromMainVertex(true);
 }
 
-HoughTrack::~HoughTrack()
-{
-}
+HoughTrack::~HoughTrack() {}
 
 void HoughTrack::Set(Track* track)
 {
