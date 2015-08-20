@@ -21,6 +21,7 @@
 #include "Accumulator.h"
 #include "BaseTransformer.h"
 #include "Hough.h"
+#include "MaxFinder.h"
 #include "StandardIncludes.h"
 #include "Transform.h"
 #include "TransformerRow.h"
@@ -479,8 +480,49 @@ void Hough::Transform(Int_t* rowrange, ClusterCollection* clusterCollection)
   }
 
   // FIXME: Add a real timer here
-  Int_t cpuTime = 0;
-  cout << "Transform done in average per patch of " << cpuTime * 1000 / fNPatches << " ms" << endl;
+  cout << "Transform done in average per patch of " << 0 / fNPatches << " ms" << endl;
+}
+
+void Hough::AddAllHistogramsRows()
+{
+  // Add the histograms within one etaslice.
+  // Resulting histogram are in patch=0.
+
+  UChar_t lastpatchlastrow = Transform::GetLastRowOnDDL(fLastPatch) + 1;
+
+  UChar_t* tracklastrow = ((TransformerRow*)fHoughTransformer[0])->GetTrackLastRow();
+
+  for (Int_t i = 0; i < fNEtaSegments; i++) {
+    UChar_t* gapcount = ((TransformerRow*)fHoughTransformer[0])->GetGapCount(i);
+    UChar_t* currentrowcount = ((TransformerRow*)fHoughTransformer[0])->GetCurrentRowCount(i);
+
+    Accumulator* hist = fHoughTransformer[0]->GetHistogram(i);
+    Int_t xmin = hist->GetFirstXbin();
+    Int_t xmax = hist->GetLastXbin();
+    Int_t ymin = hist->GetFirstYbin();
+    Int_t ymax = hist->GetLastYbin();
+    Int_t nxbins = hist->GetNbinsX() + 2;
+
+    for (Int_t ybin = ymin; ybin <= ymax; ybin++) {
+      for (Int_t xbin = xmin; xbin <= xmax; xbin++) {
+        Int_t bin = xbin + ybin * nxbins; // Int_t bin = hist->GetBin(xbin,ybin);
+        if (gapcount[bin] < MAX_N_GAPS) {
+          if (tracklastrow[bin] > lastpatchlastrow) {
+            if (lastpatchlastrow > currentrowcount[bin])
+              gapcount[bin] += (lastpatchlastrow - currentrowcount[bin] - 1);
+          } else {
+            if (tracklastrow[bin] > currentrowcount[bin])
+              gapcount[bin] += (tracklastrow[bin] - currentrowcount[bin] - 1);
+          }
+          if (gapcount[bin] < MAX_N_GAPS)
+            hist->AddBinContent(bin, (159 - gapcount[bin]));
+        }
+      }
+    }
+  }
+
+  fAddHistograms = kTRUE;
+  cout << "Adding histograms in " << 0 << " ms" << endl;
 }
 
 void Hough::PrepareForNextPatch(Int_t nextpatch)
@@ -608,5 +650,72 @@ void Hough::PrepareForNextPatch(Int_t nextpatch)
       UChar_t* tempnextrow = nextrow + endybin + 1;
       memset(tempnextrow, (UChar_t)(ymax + 1), ymax - endybin + 1);
     }
+  }
+}
+
+void Hough::FindTrackCandidatesRow()
+{
+  // Find TransformerRow track candidates
+  // Look for peaks in histograms, and find the track candidates
+  Int_t npatches;
+  if (fAddHistograms)
+    npatches = 1; // Histograms have been added.
+  else
+    npatches = fNPatches;
+
+  for (Int_t i = 0; i < npatches; i++) {
+    TransformerRow* tr = fHoughTransformer[i];
+    Accumulator* h = tr->GetHistogram(0);
+    Float_t deltax = h->GetBinWidthX() * TransformerRow::GetDAlpha();
+    Float_t deltay = h->GetBinWidthY() * TransformerRow::GetDAlpha();
+    Float_t deltaeta = (tr->GetEtaMax() - tr->GetEtaMin()) / tr->GetNEtaSegments() * TransformerRow::GetDEta();
+    Float_t zvertex = tr->GetZVertex();
+    //    fTracks[i]->Reset();
+    fPeakFinder->Reset();
+
+    for (Int_t j = 0; j < fNEtaSegments; j++) {
+      Accumulator* hist = tr->GetHistogram(j);
+      if (hist->GetNEntries() == 0)
+        continue;
+      fPeakFinder->SetHistogram(hist);
+      fPeakFinder->SetEtaSlice(j);
+      fPeakFinder->SetTrackLUTs(((TransformerRow*)tr)->GetTrackNRows(), ((TransformerRow*)tr)->GetTrackFirstRow(),
+                                ((TransformerRow*)tr)->GetTrackLastRow(), ((TransformerRow*)tr)->GetNextRow(j));
+#ifdef do_mc
+      cout << "Starting " << j << " etaslice" << endl;
+#endif
+      fPeakFinder->SetThreshold(fPeakThreshold[i]);
+      fPeakFinder->FindAdaptedRowPeaks(1, 0, 0); // Maxima finder for HoughTransformerRow
+    }
+    /*
+        for (Int_t k = 0; k < fPeakFinder->GetEntries(); k++) {
+          //    if(fPeakFinder->GetWeight(k) < 0) continue;
+          Track* track = (Track*)fTracks[i]->NextTrack();
+          Double_t starteta = tr->GetEta(fPeakFinder->GetStartEta(k), fCurrentSlice);
+          Double_t endeta = tr->GetEta(fPeakFinder->GetEndEta(k), fCurrentSlice);
+          Double_t eta = (starteta + endeta) / 2.0;
+          track->SetTrackParametersRow(fPeakFinder->GetXPeak(k), fPeakFinder->GetYPeak(k), eta,
+    fPeakFinder->GetWeight(k));
+          track->SetPterr(deltax);
+          track->SetPsierr(deltay);
+          track->SetTglerr(deltaeta);
+          track->SetBinXY(fPeakFinder->GetXPeak(k), fPeakFinder->GetYPeak(k), fPeakFinder->GetXPeakSize(k),
+                          fPeakFinder->GetYPeakSize(k));
+          track->SetZ0(zvertex);
+          Int_t etaindex = (fPeakFinder->GetStartEta(k) + fPeakFinder->GetEndEta(k)) / 2;
+          track->SetEtaIndex(etaindex);
+          Int_t rows[2];
+          ((TransformerRow*)tr)->GetTrackLength(fPeakFinder->GetXPeak(k), fPeakFinder->GetYPeak(k), rows);
+          track->SetRowRange(rows[0], rows[1]);
+          track->SetSector(fCurrentSlice);
+          track->SetSlice(fCurrentSlice);
+    #ifdef do_mc
+          Int_t label = tr->GetTrackID(etaindex, fPeakFinder->GetXPeak(k), fPeakFinder->GetYPeak(k));
+          track->SetMCid(label);
+    #endif
+        }
+        */
+    // cout << "Found " << fTracks[i]->GetNTracks() << " tracks in slice " << fCurrentSlice << endl;
+    // fTracks[i]->QSort();
   }
 }

@@ -24,6 +24,7 @@ set(SRCS
   ClusterCollection.cxx
   Hough.cxx
   HoughTrack.cxx
+  MaxFinder.cxx
   Track.cxx
   Transform.cxx
   TransformerRow.cxx

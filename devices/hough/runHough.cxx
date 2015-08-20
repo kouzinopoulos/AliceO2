@@ -535,9 +535,9 @@ int main(int argc, char** argv)
   for (Int_t slice = 0; slice <= 35; slice++) {
     //     hough->ReadData(slice,iEvent);
     hough->Transform(0, clusterCollection);
-//    hough->AddAllHistogramsRows();
-//    hough->FindTrackCandidatesRow();
-//    hough->AddTracks();
+    hough->AddAllHistogramsRows();
+    hough->FindTrackCandidatesRow();
+    //    hough->AddTracks();
   }
 
   /*

@@ -10,10 +10,9 @@
 namespace AliceO2 {
 namespace Hough {
 
-// class HoughMaxFinder;
-
 class Accumulator;
 class TransformerRow;
+class MaxFinder;
 // class HoughEval;
 // class AliHLTTPCTrackArray;
 // class HoughMerger;
@@ -101,13 +100,13 @@ public:
     }
     return fHoughTransformer[i];
   }
-  /*  AliHLTTPCTrackArray* GetTracks(Int_t i) const
-    {
-      if (!fTracks[i])
-        return 0;
-      return fTracks[i];
-    }
-    HoughEval* GetEval(Int_t i) const
+  /*TrackArray* GetTracks(Int_t i) const
+  {
+    if (!fTracks[i])
+      return 0;
+    return fTracks[i];
+  }
+     HoughEval* GetEval(Int_t i) const
     {
       if (!fEval[i])
         return 0;
@@ -188,16 +187,16 @@ private:
 
   //  AliHLTTPCMemHandler** fMemHandler;    //!
   TransformerRow** fHoughTransformer; //!
-                                       //  HoughEval** fEval;                    //!
-                                       //  HoughMaxFinder* fPeakFinder;          //!
-                                       //  AliHLTTPCTrackArray** fTracks;        //!
-                                       //  AliHLTTPCTrackArray* fGlobalTracks;   //!
-                                       //  HoughMerger* fMerger;                 //!
-                                       //  HoughIntMerger* fInterMerger;         //!
-                                       //  HoughGlobalMerger* fGlobalMerger;     //!
-                                       //  AliHLTTPCBenchmark* fBenchmark;       //!
-                                       //
-                                       //  AliRunLoader* fRunLoader; // Run Loader
+  //  HoughEval** fEval;                    //!
+  MaxFinder* fPeakFinder; //!
+  // TrackArray** fTracks; //!
+  //  AliHLTTPCTrackArray* fGlobalTracks;   //!
+  //  HoughMerger* fMerger;                 //!
+  //  HoughIntMerger* fInterMerger;         //!
+  //  HoughGlobalMerger* fGlobalMerger;     //!
+  //  AliHLTTPCBenchmark* fBenchmark;       //!
+  //
+  //  AliRunLoader* fRunLoader; // Run Loader
 
   void CleanUp();
   Double_t GetCpuTime();
