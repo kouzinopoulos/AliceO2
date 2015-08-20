@@ -317,7 +317,6 @@ public:
   static void Global2Raw(float* xyz, int sector, int row);
   static void Global2HLT(float* xyz, int slice, int slicerow);
 };
-
 }
 }
 

@@ -150,7 +150,7 @@ private:
   static Double_t fgEtaCalcParam1,
     fgEtaCalcParam2;               ///< Parameters used for fast calculation of eta during the binning of Hough space
   static Double_t fgEtaCalcParam3; ///< Parameter used during the eta binning of the Hough Space in order to account for
-  /// finite track radii
+                                   /// finite track radii
 
   //  AliTPCRawStream* fTPCRawStream; ///< Pointer to the raw stream in case of fast reading of the raw data (fast_raw
   //  flag)
