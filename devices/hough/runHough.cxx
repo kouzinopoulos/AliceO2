@@ -53,9 +53,9 @@ void drawAccumulatorCurves(int totalNumberOfClusters)
 
     g[i] = new TGraph();
 
-    for (Int_t theta = 0; theta < thetalphaMax; theta++) {
+    for (Int_t theta = 0; theta < thetaMax; theta++) {
       double r = (x * cos(theta * DEG2RAD)) + (y * sin(theta * DEG2RAD));
-      g[i]->SetPoint(i * thetalphaMax + theta, theta, r);
+      g[i]->SetPoint(i * thetaMax + theta, theta, r);
     }
 
     g[i]->SetMarkerStyle(1);
@@ -72,12 +72,12 @@ void drawAccumulatorCurves(int totalNumberOfClusters)
 void drawAccumulatorHistogram()
 {
   TCanvas* c5 = new TCanvas("c5", "Accumulator histogram", 0, 0, 800, 600);
-  TH2F* h = new TH2F("h", "Accumulator histogram", rResolution, 0, rResolution, thetalphaMax, 0, thetalphaMax);
+  TH2F* h = new TH2F("h", "Accumulator histogram", rResolution, 0, rResolution, thetaMax, 0, thetaMax);
 
   h->SetFillColor(46);
 
   for (Int_t r = 0; r < rResolution; r++) {
-    for (Int_t theta = 0; theta < thetalphaMax; theta++) {
+    for (Int_t theta = 0; theta < thetaMax; theta++) {
       if (getAccumulatorBin(15, r, theta) > 0) {
         h->SetBinContent(r, theta, getAccumulatorBin(15, r, theta));
       }
@@ -174,7 +174,7 @@ int localAccumulatorMaxima(int etaSlice, int r, int theta)
 
   for (int deltaR = -4; deltaR < 5; deltaR++) {
     for (int deltaTheta = -4; deltaTheta < 5; deltaTheta++) {
-      if ((deltaR + r >= 0 && deltaR + r < rMax) && (deltaTheta + theta >= 0 && deltaTheta + theta < thetalphaMax)) {
+      if ((deltaR + r >= 0 && deltaR + r < rMax) && (deltaTheta + theta >= 0 && deltaTheta + theta < thetaMax)) {
         if (getAccumulatorBin(etaSlice, r + deltaR, theta + deltaTheta) > max) {
           return getAccumulatorBin(etaSlice, r + deltaR, theta + deltaTheta);
         }
@@ -194,7 +194,7 @@ void trackFinding(int etaSlice)
   int trackCount = 0;
 
   for (Int_t rBin = 0; rBin < rResolution; rBin++) {
-    for (Int_t theta = 0; theta < thetalphaMax; theta++) {
+    for (Int_t theta = 0; theta < thetaMax; theta++) {
       if (getAccumulatorBin(etaSlice, rBin, theta) >= houghThreshold) {
         if (localAccumulatorMaxima(etaSlice, rBin, theta) > getAccumulatorBin(etaSlice, rBin, theta)) {
           continue;
@@ -251,12 +251,12 @@ void calculateEtaSlice(int totalNumberOfClusters)
   for (int i = 0; i < totalNumberOfClusters; i++) {
     Float_t eta = clusterCollection->getClusterEta(i);
 
-    if (etalphaMax - etalphaMin == 0) {
+    if (etaMax - etaMin == 0) {
       cerr << "The minimum and maximum eta value of all clusters is identical" << endl;
       exit(1);
     }
 
-    Double_t etaSlice = (etaResolution * (eta - etalphaMin)) / (etalphaMax - etalphaMin);
+    Double_t etaSlice = (etaResolution * (eta - etaMin)) / (etaMax - etaMin);
 
     clusterCollection->setClusterEtaSlice(i, (Int_t)etaSlice);
   }
@@ -301,20 +301,20 @@ void conformalMapping2()
 
 void transformCartesian(int totalNumberOfClusters)
 {
-  thetalphaMax = thetaResolution;
+  thetaMax = thetaResolution;
   // Trigonometrically, the maximum distance is designated by the square root of the summation of the squares of the x
   // and y dimensions
   rMax = ceil(sqrt(xMax * xMax + yMax * yMax));
 
-  // The lines will have -rMax <= r <= rMax and 0 <= theta <= thetalphaMax. The total space needed is thus 2 * rMax *
-  // thetalphaMax
-  accumulator.resize(2 * rMax * thetalphaMax * rResolution, 0);
+  // The lines will have -rMax <= r <= rMax and 0 <= theta <= thetaMax. The total space needed is thus 2 * rMax *
+  // thetaMax
+  accumulator.resize(2 * rMax * thetaMax * rResolution, 0);
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     Float_t x = clusterCollection->getClusterX(i);
     Float_t y = clusterCollection->getClusterY(i);
 
-    for (Int_t theta = 0; theta < thetalphaMax; theta++) {
+    for (Int_t theta = 0; theta < thetaMax; theta++) {
       double r = (x * cos(theta * DEG2RAD)) + (y * sin(theta * DEG2RAD));
       //      cout << "x: " << x << " y: " << y << " theta: " << theta << " r: " << r
       //           << " round r: " << round((r + rMax) * rResolution) << endl;
@@ -328,7 +328,7 @@ void transformCartesian(int totalNumberOfClusters)
 
 void transformConformalMapping(int totalNumberOfClusters)
 {
-  thetalphaMax = 180;
+  thetaMax = 180;
   // Trigonometrically, the maximum distance is designated by the square root of the summation of the squares of the x
   // and y dimensions
   rMax = ceil(sqrt(alphaMax * alphaMax + betaMax * betaMax));
@@ -336,11 +336,11 @@ void transformConformalMapping(int totalNumberOfClusters)
   // cout << "rMin: " << -rMax << " rMax: " << rMax << endl;
 
   // Reserve space for the accumulator bins
-  accumulator.resize(etaResolution * rResolution * thetalphaMax + rResolution * thetalphaMax + thetalphaMax, 0);
+  accumulator.resize(etaResolution * rResolution * thetaMax + rResolution * thetaMax + thetaMax, 0);
 
-  cout << "Accumulator size: " << 2 * rMax* thetalphaMax* rResolution* etaResolution << endl;
-  cout << "Alternative accumulator size: "
-       << etaResolution* rResolution* thetalphaMax + rResolution* thetalphaMax + thetalphaMax << endl;
+  cout << "Accumulator size: " << 2 * rMax* thetaMax* rResolution* etaResolution << endl;
+  cout << "Alternative accumulator size: " << etaResolution* rResolution* thetaMax + rResolution* thetaMax + thetaMax
+       << endl;
 
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
     Float_t a = clusterCollection->getClusterAlpha(i);
@@ -348,7 +348,7 @@ void transformConformalMapping(int totalNumberOfClusters)
     Float_t eta = clusterCollection->getClusterEta(i);
     UInt_t etaSlice = clusterCollection->getClusterEtaSlice(i);
 
-    for (Int_t theta = 0; theta < thetalphaMax; theta++) {
+    for (Int_t theta = 0; theta < thetaMax; theta++) {
       double r = (a * cos(theta * DEG2RAD)) + (b * sin(theta * DEG2RAD));
       int rBin = getRBinValue(r);
 
@@ -365,29 +365,28 @@ void transformConformalMapping(int totalNumberOfClusters)
   }
 }
 
-/// Determine the minimum and maximum values of the pseudorapidity (eta). That way, the TPC digits can be
-/// transformed in
+/// Determine the minimum and maximum values of the pseudorapidity (eta). That way, the TPC digits can be transformed in
 /// two dimensions instead of three in slices of similar pseudorapidity
 void determineMinMaxEta(int totalNumberOfClusters)
 {
   for (Int_t i = 0; i < totalNumberOfClusters; i++) {
 
-    Float_t eta = clusterCollection->getClusterEta(i);
+    Double_t eta = clusterCollection->getClusterEta(i);
 
-    // Set initial values to etalphaMin and etalphaMax
+    // Set initial values to etaMin and etaMax
     if (i == 0) {
-      etalphaMin = eta;
-      etalphaMax = eta;
+      etaMin = eta;
+      etaMax = eta;
       continue;
     }
 
-    if (eta < etalphaMin) {
-      etalphaMin = eta;
-    } else if (eta > etalphaMax) {
-      etalphaMax = eta;
+    if (eta < etaMin) {
+      etaMin = eta;
+    } else if (eta > etaMax) {
+      etaMax = eta;
     }
   }
-  cout << "Minimum eta: " << etalphaMin << " Maximum eta: " << etalphaMax << endl;
+  cout << "Minimum eta: " << etaMin << " Maximum eta: " << etaMax << endl;
 }
 
 /// Determine the maximum ceiling to x,y,z coordinates from the clusterCartesianCoordinates vector to
@@ -418,8 +417,7 @@ void determineMinMaxXY(int totalNumberOfClusters)
   cout << "xMin: " << xMin << " xMax: " << xMax << " yMin: " << yMin << " yMax: " << yMax << endl;
 }
 
-/// Determine the maximum ceiling to a and b conformal mapping coordinates from the
-/// clusterCartesianCoordinates vector
+/// Determine the maximum ceiling to a and b conformal mapping coordinates from the clusterCartesianCoordinates vector
 /// to later allocate the hough transform accumulator
 void determineMinMaxAlphaBeta(int totalNumberOfClusters)
 {
@@ -533,7 +531,6 @@ int main(int argc, char** argv)
   hough->SetAddHistograms();
 
   for (Int_t slice = 0; slice <= 35; slice++) {
-    //     hough->ReadData(slice,iEvent);
     hough->Transform(0, clusterCollection);
     hough->AddAllHistogramsRows();
     hough->FindTrackCandidatesRow();
@@ -694,7 +691,7 @@ int main(int argc, char** argv)
       cout << i << " " << array[i] << endl;
     }
 
-    for (int theta = 0; theta < thetalphaMax; theta++) {
+    for (int theta = 0; theta < thetaMax; theta++) {
       for (int rBin = 0; rBin < rResolution; rBin++) {
         cout << theta << " " << rBin << " " << getAccumulatorBin(15, rBin, theta ) << endl;
       }

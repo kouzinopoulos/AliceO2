@@ -27,7 +27,7 @@ struct trackDataFormat {
 };
 
 struct accumulatorDataFormat {
-  // UShort_t bin[rResolution * thetalphaMax + thetalphaMax];
+  // UShort_t bin[rResolution * thetaMax + thetaMax];
   UShort_t* bin;
 };
 
@@ -99,11 +99,11 @@ Double_t alphaMax;
 Double_t betaMin;
 Double_t betaMax;
 
-float etalphaMin;
-float etalphaMax;
+Double_t etaMin;
+Double_t etaMax;
 
 int rMax;
-int thetalphaMax;
+int thetaMax;
 
 // Project parameters
 int houghThreshold = 53;
@@ -138,12 +138,12 @@ int rResolution = 10000;
 // Create instead a vector fParamSpace of histograms for each etaIndex (AliHLTHoughTransformRow::GetHistogram)
 void setAccumulatorBin(int etaSlice, int r, int theta)
 {
-  accumulator[etaSlice * (rResolution * thetalphaMax) + r * thetalphaMax + theta]++;
+  accumulator[etaSlice * (rResolution * thetaMax) + r * thetaMax + theta]++;
 }
 
 int getAccumulatorBin(int etaSlice, int r, int theta)
 {
-  return accumulator[etaSlice * (rResolution * thetalphaMax) + r * thetalphaMax + theta];
+  return accumulator[etaSlice * (rResolution * thetaMax) + r * thetaMax + theta];
 }
 
 // Solve getRBinValue to r

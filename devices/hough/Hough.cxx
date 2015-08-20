@@ -688,7 +688,7 @@ void Hough::FindTrackCandidatesRow()
       cout << "StartEta: " << tr->GetEta(fPeakFinder->GetStartEta(k), fCurrentSlice)
            << " EndEta: " << tr->GetEta(fPeakFinder->GetEndEta(k), fCurrentSlice)
            << " Weight: " << fPeakFinder->GetWeight(k) << " XPeak: " << fPeakFinder->GetXPeak(k)
-           << " YPeak: " << fPeakFinder->GetYPeak(k) << " Length: row " << rows[0] << " to " << rows[1]  << endl;
+           << " YPeak: " << fPeakFinder->GetYPeak(k) << " Length: row " << rows[0] << " to " << rows[1] << endl;
     }
 
     /*
