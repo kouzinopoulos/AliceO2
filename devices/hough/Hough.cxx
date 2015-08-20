@@ -21,17 +21,16 @@
 #include "Accumulator.h"
 #include "BaseTransformer.h"
 #include "Hough.h"
+#include "HoughTrack.h"
 #include "MaxFinder.h"
 #include "StandardIncludes.h"
 #include "Transform.h"
 #include "TransformerRow.h"
-//#include "HoughMaxFinder.h"
 
 //#include "AliHLTDigitData.h"
 //#include "HoughEval.h"
 //#include "AliHLTTPCTransform.h"
 //#include "AliHLTTPCTrackArray.h"
-#include "Track.h"
 
 #ifdef HAVE_ALIHLTDDLDATAFILEHANDLER
 #include "AliHLTDDLDataFileHandler.h"
@@ -62,7 +61,7 @@ Hough::Hough()
   //  fMemHandler = 0;
   fHoughTransformer = 0;
   //  fEval = 0;
-  //  fPeakFinder = 0;
+  fPeakFinder = 0;
   //  fTracks = 0;
   //  fGlobalTracks = 0;
   //  fMerger = 0;
@@ -277,26 +276,13 @@ void Hough::Init(Bool_t doit, Bool_t addhists)
 
     cout << "Initializing Hough transformer" << endl;
   }
-  /*
-    fPeakFinder = new HoughMaxFinder("KappaPhi", 50000);
-    if (fVersion != 4) {
-  #ifdef HAVE_ALIHLTHOUGHMERGER
-      fMerger = new AliHLTHoughMerger(fNPatches);
-  #else
-      AliErrorClassStream() << "AliHLTHoughMerger not compiled" << endl;
-  #endif // HAVE_ALIHLTHOUGHMERGER
-  #ifdef HAVE_ALIHLTHOUGHINTMERGER
-      fInterMerger = new AliHLTHoughIntMerger();
-  #else
-      AliErrorClassStream() << "AliHLTHoughIntMerger not compiled" << endl;
-  #endif // HAVE_ALIHLTHOUGHINTMERGER
-    } else {
-      fMerger = 0;
-      fInterMerger = 0;
-    }
-    fGlobalMerger = 0;
-    fBenchmark = new AliHLTTPCBenchmark();
-    */
+
+  fPeakFinder = new MaxFinder("KappaPhi", 50000);
+  //  fMerger = 0;
+  //  fInterMerger = 0;
+
+  //  fGlobalMerger = 0;
+  //    fBenchmark = new AliHLTTPCBenchmark();
 }
 
 void Hough::SetTransformerParams(Float_t ptres, Float_t ptmin, Float_t ptmax, Int_t ny, Int_t patch)
@@ -687,34 +673,33 @@ void Hough::FindTrackCandidatesRow()
       fPeakFinder->SetThreshold(fPeakThreshold[i]);
       fPeakFinder->FindAdaptedRowPeaks(1, 0, 0); // Maxima finder for HoughTransformerRow
     }
-    /*
-        for (Int_t k = 0; k < fPeakFinder->GetEntries(); k++) {
-          //    if(fPeakFinder->GetWeight(k) < 0) continue;
-          Track* track = (Track*)fTracks[i]->NextTrack();
-          Double_t starteta = tr->GetEta(fPeakFinder->GetStartEta(k), fCurrentSlice);
-          Double_t endeta = tr->GetEta(fPeakFinder->GetEndEta(k), fCurrentSlice);
-          Double_t eta = (starteta + endeta) / 2.0;
-          track->SetTrackParametersRow(fPeakFinder->GetXPeak(k), fPeakFinder->GetYPeak(k), eta,
-    fPeakFinder->GetWeight(k));
-          track->SetPterr(deltax);
-          track->SetPsierr(deltay);
-          track->SetTglerr(deltaeta);
-          track->SetBinXY(fPeakFinder->GetXPeak(k), fPeakFinder->GetYPeak(k), fPeakFinder->GetXPeakSize(k),
-                          fPeakFinder->GetYPeakSize(k));
-          track->SetZ0(zvertex);
-          Int_t etaindex = (fPeakFinder->GetStartEta(k) + fPeakFinder->GetEndEta(k)) / 2;
-          track->SetEtaIndex(etaindex);
-          Int_t rows[2];
-          ((TransformerRow*)tr)->GetTrackLength(fPeakFinder->GetXPeak(k), fPeakFinder->GetYPeak(k), rows);
-          track->SetRowRange(rows[0], rows[1]);
-          track->SetSector(fCurrentSlice);
-          track->SetSlice(fCurrentSlice);
-    #ifdef do_mc
-          Int_t label = tr->GetTrackID(etaindex, fPeakFinder->GetXPeak(k), fPeakFinder->GetYPeak(k));
-          track->SetMCid(label);
-    #endif
-        }
-        */
+
+    for (Int_t k = 0; k < fPeakFinder->GetEntries(); k++) {
+      //    if(fPeakFinder->GetWeight(k) < 0) continue;
+      HoughTrack* track = (HoughTrack*)fTracks[i]->NextTrack();
+      Double_t starteta = tr->GetEta(fPeakFinder->GetStartEta(k), fCurrentSlice);
+      Double_t endeta = tr->GetEta(fPeakFinder->GetEndEta(k), fCurrentSlice);
+      Double_t eta = (starteta + endeta) / 2.0;
+      track->SetTrackParametersRow(fPeakFinder->GetXPeak(k), fPeakFinder->GetYPeak(k), eta, fPeakFinder->GetWeight(k));
+      track->SetPterr(deltax);
+      track->SetPsierr(deltay);
+      track->SetTglerr(deltaeta);
+      track->SetBinXY(fPeakFinder->GetXPeak(k), fPeakFinder->GetYPeak(k), fPeakFinder->GetXPeakSize(k),
+                      fPeakFinder->GetYPeakSize(k));
+      track->SetZ0(zvertex);
+      Int_t etaindex = (fPeakFinder->GetStartEta(k) + fPeakFinder->GetEndEta(k)) / 2;
+      track->SetEtaIndex(etaindex);
+      Int_t rows[2];
+      ((TransformerRow*)tr)->GetTrackLength(fPeakFinder->GetXPeak(k), fPeakFinder->GetYPeak(k), rows);
+      track->SetRowRange(rows[0], rows[1]);
+      track->SetSector(fCurrentSlice);
+      track->SetSlice(fCurrentSlice);
+#ifdef do_mc
+      Int_t label = tr->GetTrackID(etaindex, fPeakFinder->GetXPeak(k), fPeakFinder->GetYPeak(k));
+      track->SetMCid(label);
+#endif
+    }
+
     // cout << "Found " << fTracks[i]->GetNTracks() << " tracks in slice " << fCurrentSlice << endl;
     // fTracks[i]->QSort();
   }
