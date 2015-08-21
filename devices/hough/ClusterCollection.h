@@ -51,6 +51,7 @@ public:
   /// Load cluster information to memory from a directory
   UInt_t processData(std::string dataPath, std::string dataType, std::string dataOrigin);
 
+/*
   UInt_t getClusterID(int clusterNumber) { return clusterData[clusterNumber].mID; }
   UInt_t getClusterCharge(int clusterNumber) { return clusterData[clusterNumber].mCharge; }
 
@@ -70,32 +71,19 @@ public:
   Double_t getClusterEta(int clusterNumber) { return clusterData[clusterNumber].mEta; }
   Int_t getClusterEtaSlice(int clusterNumber) { return clusterData[clusterNumber].mEtaSlice; }
 
-  UInt_t getNumberOfClustersPerPadRow(UInt_t padRow) { return clusterData2[padRow].size(); }
-
   void setClusterAlpha(int clusterNumber, Double_t alpha) { clusterData[clusterNumber].mAlpha = alpha; }
   void setClusterBeta(int clusterNumber, Double_t beta) { clusterData[clusterNumber].mBeta = beta; }
   void setClusterEta(int clusterNumber, Double_t eta) { clusterData[clusterNumber].mEta = eta; }
   void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice) { clusterData[clusterNumber].mEtaSlice = etaSlice; }
+*/
 
-  void setClusterParameters(UInt_t clusterID, Double_t x, Double_t y, Double_t z, UInt_t charge, UChar_t padRow,
-                            Double_t pad, Double_t time, UInt_t tpcSlice, UInt_t tpcPartition)
-  {
-    clusterDataFormat data;
-    data.mID = clusterID;
-    data.mCharge = charge;
-    data.mTPCSlice = tpcSlice;
-    data.mTPCPartition = tpcPartition;
-    data.mPadRow = padRow;
-    data.mPad = pad;
-    data.mTime = time;
-    data.mX = x;
-    data.mY = y;
-    data.mZ = z;
+  UInt_t getNumberOfClustersPerPadRow(UInt_t padRow) { return clusterData2[padRow].size(); }
 
-    clusterData.push_back(data);
-  }
-
+  UInt_t getClusterID(UInt_t padRow, int clusterNumber) { return clusterData2[padRow][clusterNumber].mID; }
   UInt_t getClusterCharge(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mCharge; }
+
+  UInt_t getClusterSlice(UInt_t padRow, int clusterNumber) { return clusterData2[padRow][clusterNumber].mTPCSlice; }
+  UInt_t getClusterPartition(UInt_t padRow, int clusterNumber) { return clusterData2[padRow][clusterNumber].mTPCPartition; }
 
   Double_t getClusterPad(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mPad; }
   Double_t getClusterTime(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mTime; }
@@ -106,6 +94,8 @@ public:
 
   Double_t getClusterAlpha(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mAlpha; }
   Double_t getClusterBeta(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mBeta; }
+
+  Int_t getClusterEtaSlice(UInt_t padRow, int clusterNumber) { return clusterData2[padRow][clusterNumber].mEtaSlice; }
 
   void setClusterAlpha(UInt_t padRow, UInt_t clusterNumber, Double_t alpha) { clusterData2[padRow][clusterNumber].mAlpha = alpha; }
   void setClusterBeta(UInt_t padRow, UInt_t clusterNumber, Double_t beta) { clusterData2[padRow][clusterNumber].mBeta = beta; }

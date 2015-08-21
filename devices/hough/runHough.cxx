@@ -10,133 +10,65 @@
 
 using namespace AliceO2::Hough;
 
-// fgBeta1 and fgBeta2 are two curves which define the Hough space
-Float_t fgBeta1 = 1.0 / Row2X(84);
-Float_t fgBeta2 = 1.0 / (Row2X(158) * (1.0 + tan(Pi() * 10 / 180) * tan(Pi() * 10 / 180)));
-
-void drawTracks(int totalNumberOfClusters)
+void draw1DCartesianClustersPerEtaSlice(int etaSlice)
 {
-  TCanvas* trackCanvas = new TCanvas("trackCanvas", "Reconstructed tracks", 0, 0, 800, 600);
-  TGraph* trackGraph[totalNumberOfClusters];
+  TCanvas* cartesianClustersPerEtaSliceCanvas1D =
+    new TCanvas("cartesianClustersPerEtaSliceCanvas1D", "Cartesian clusters per eta slice");
+  TGraph* cartesianClustersPerEtaSliceGraph1D = new TGraph();
 
-  cout << "Number of tracks: " << getNumberOfTracks() << endl;
-
-  for (int i = 0; i < getNumberOfTracks(); i++) {
-
-    // DEBUG
-    if (getTrackEtaSlice(i) != 79)
-      continue;
-
-    trackGraph[i] = new TGraph();
-
-    trackGraph[i]->SetPoint(i * 2 + 0, getTrackAlpha1(i), getTrackBeta1(i));
-    trackGraph[i]->SetPoint(i * 2 + 1, getTrackAlpha2(i), getTrackBeta2(i));
-
-    if (i == 0) {
-      trackGraph[i]->Draw("AC");
-    } else {
-      trackGraph[i]->Draw("CP");
-    }
-  }
-  trackCanvas->Print("tracks.pdf");
-}
-
-void drawAccumulatorCurves(int totalNumberOfClusters)
-{
-  // FIXME: The method calculates again r. Is it possible to obtain this information directly from the accumulator?
-  TCanvas* c4 = new TCanvas("c4", "Accumulator curves", 0, 0, 800, 600);
-  TGraph* g[totalNumberOfClusters];
-
-  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    Float_t x = clusterCollection->getClusterX(i);
-    Float_t y = clusterCollection->getClusterY(i);
-
-    g[i] = new TGraph();
-
-    for (Int_t theta = 0; theta < thetaMax; theta++) {
-      double r = (x * cos(theta * DEG2RAD)) + (y * sin(theta * DEG2RAD));
-      g[i]->SetPoint(i * thetaMax + theta, theta, r);
-    }
-
-    g[i]->SetMarkerStyle(1);
-
-    if (i == 0) {
-      g[i]->Draw("AC");
-    } else {
-      g[i]->Draw("CP");
-    }
-  }
-  c4->Print("accumulatorCurves.pdf");
-}
-
-void drawAccumulatorHistogram()
-{
-  TCanvas* c5 = new TCanvas("c5", "Accumulator histogram", 0, 0, 800, 600);
-  TH2F* h = new TH2F("h", "Accumulator histogram", rResolution, 0, rResolution, thetaMax, 0, thetaMax);
-
-  h->SetFillColor(46);
-
-  for (Int_t r = 0; r < rResolution; r++) {
-    for (Int_t theta = 0; theta < thetaMax; theta++) {
-      if (getAccumulatorBin(15, r, theta) > 0) {
-        h->SetBinContent(r, theta, getAccumulatorBin(15, r, theta));
+  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
+    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
+         clusterNumber++) {
+      if (clusterCollection->getClusterEtaSlice(padRow, clusterNumber) == etaSlice) {
+        cartesianClustersPerEtaSliceGraph1D->SetPoint(clusterNumber,
+                                                      clusterCollection->getClusterX(padRow, clusterNumber),
+                                                      clusterCollection->getClusterY(padRow, clusterNumber));
       }
     }
   }
 
-  h->Draw("LEGO");
-  c5->Print("accumulatorHistogram.pdf");
+  cartesianClustersPerEtaSliceGraph1D->SetMarkerStyle(7);
+  cartesianClustersPerEtaSliceGraph1D->Draw("AP");
+  cartesianClustersPerEtaSliceGraph1D->GetXaxis()->SetRangeUser(80, 240);
+  cartesianClustersPerEtaSliceGraph1D->GetXaxis()->SetTitle("Pad Row");
+
+  cartesianClustersPerEtaSliceCanvas1D->Print("cartesianClustersPerEtaSlice.pdf");
 }
 
-void drawCartesianClusters1D(int etaSlice, int totalNumberOfClusters)
+void draw1DCartesianClustersPerPadRow(int padRow)
 {
-  TCanvas* cartesianClustersCanvas1D = new TCanvas("cartesianClustersCanvas1D", "Cartesian clusters");
-  TGraph* cartesianClustersGraph1D = new TGraph();
+  TCanvas* cartesianClustersPerPadRowCanvas1D =
+    new TCanvas("cartesianClustersPerPadRow1D", "Cartesian clusters per pad row");
+  TGraph* cartesianClustersPerPadRowGraph1D = new TGraph();
 
-  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    if (clusterCollection->getClusterEtaSlice(i) == etaSlice) {
-      cartesianClustersGraph1D->SetPoint(i, clusterCollection->getClusterX(i), clusterCollection->getClusterY(i));
-    }
+  for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
+       clusterNumber++) {
+    cartesianClustersPerPadRowGraph1D->SetPoint(clusterNumber, clusterCollection->getClusterX(padRow, clusterNumber),
+                                                clusterCollection->getClusterY(padRow, clusterNumber));
   }
 
-  cartesianClustersGraph1D->SetMarkerStyle(7);
-  cartesianClustersGraph1D->Draw("AP");
-  cartesianClustersGraph1D->GetXaxis()->SetRangeUser(80, 240);
-  cartesianClustersGraph1D->GetXaxis()->SetTitle("Pad Row");
+  cartesianClustersPerPadRowGraph1D->SetMarkerStyle(7);
+  cartesianClustersPerPadRowGraph1D->Draw("AP");
+  cartesianClustersPerPadRowGraph1D->GetXaxis()->SetRangeUser(80, 240);
+  cartesianClustersPerPadRowGraph1D->GetXaxis()->SetTitle("Pad Row");
 
-  cartesianClustersCanvas1D->Print("cartesianClusters1D.pdf");
+  cartesianClustersPerPadRowCanvas1D->Print("cartesianClustersPerPadRow.pdf");
 }
 
-void drawConformalMappingClusters1D(int etaSlice, int totalNumberOfClusters)
-{
-  TCanvas* conformalMappingClustersCanvas1D =
-    new TCanvas("conformalMappingClustersCanvas1D", "Conformal mapping clusters", 0, 0, 800, 600);
-  TGraph* conformalMappingClustersGraph1D = new TGraph();
-
-  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    if (clusterCollection->getClusterEtaSlice(i) == etaSlice) {
-      conformalMappingClustersGraph1D->SetPoint(i, clusterCollection->getClusterAlpha(i),
-                                                clusterCollection->getClusterBeta(i));
-    }
-  }
-
-  conformalMappingClustersGraph1D->SetMarkerStyle(7);
-  conformalMappingClustersGraph1D->Draw("AP");
-  conformalMappingClustersGraph1D->GetXaxis()->SetRangeUser(0.004, 0.012);
-
-  conformalMappingClustersCanvas1D->Print("conformalMappingClusters1D.pdf");
-}
-
-void drawCartesianClusters(int totalNumberOfClusters)
+void drawCartesianClusters()
 {
   TCanvas* cartesianClustersCanvas = new TCanvas("cartesianClustersCanvas", "Cartesian clusters", 800, 600);
   TGraph2D* cartesianClustersGraph2D = new TGraph2D();
 
-  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    // cout << "graph: " << i << " " << getClusterX(i) << " " << getClusterY(i) << " " <<
-    // getClusterZ(i) << " " << endl;
-    cartesianClustersGraph2D->SetPoint(i, clusterCollection->getClusterX(i), clusterCollection->getClusterY(i),
-                                       clusterCollection->getClusterZ(i));
+  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
+    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
+         clusterNumber++) {
+      // cout << "graph: " << i << " " << getClusterX(i) << " " << getClusterY(i) << " " <<
+      // getClusterZ(i) << " " << endl;
+      cartesianClustersGraph2D->SetPoint(padRow, clusterCollection->getClusterX(padRow, clusterNumber),
+                                         clusterCollection->getClusterY(padRow, clusterNumber),
+                                         clusterCollection->getClusterZ(padRow, clusterNumber));
+    }
   }
 
   // Draw with colored dots
@@ -147,327 +79,50 @@ void drawCartesianClusters(int totalNumberOfClusters)
   cartesianClustersCanvas->Print("cartesianClusters2D.pdf");
 }
 
-void drawConformalMappingClusters(int totalNumberOfClusters)
+void printData(int padRow)
 {
-  TCanvas* conformalMappingClustersCanvas =
-    new TCanvas("conformalMappingClustersCanvas", "Conformal Mapping clusters", 800, 600);
-  TGraph2D* conformalMappingClustersGraph2D = new TGraph2D(totalNumberOfClusters);
+  cout << "ID" << setw(16) << "X" << setw(14) << "Y" << setw(12) << "Z" << setw(9) << "Pad" << setw(10) << "Time"
+       << setw(10) << "Charge" << endl;
 
-  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    conformalMappingClustersGraph2D->SetPoint(i, clusterCollection->getClusterAlpha(i),
-                                              clusterCollection->getClusterBeta(i),
-                                              clusterCollection->getClusterEta(i));
-  }
-
-  // Draw with colored dots
-  conformalMappingClustersGraph2D->SetMarkerStyle(6);
-  conformalMappingClustersGraph2D->SetTitle("TPC Clusters in a, b, eta");
-  conformalMappingClustersGraph2D->Draw("pcol");
-
-  conformalMappingClustersCanvas->Print("conformalMappingClusters.pdf");
-}
-
-// Determine if the current value is the maximum in an area of 9x9 points
-int localAccumulatorMaxima(int etaSlice, int r, int theta)
-{
-  int max = getAccumulatorBin(etaSlice, r, theta);
-
-  for (int deltaR = -4; deltaR < 5; deltaR++) {
-    for (int deltaTheta = -4; deltaTheta < 5; deltaTheta++) {
-      if ((deltaR + r >= 0 && deltaR + r < rMax) && (deltaTheta + theta >= 0 && deltaTheta + theta < thetaMax)) {
-        if (getAccumulatorBin(etaSlice, r + deltaR, theta + deltaTheta) > max) {
-          return getAccumulatorBin(etaSlice, r + deltaR, theta + deltaTheta);
-        }
-      }
-    }
-  }
-  return max;
-}
-
-/// Determine the start and end coordinates of all the tracks, calculated from the local maxima of the accumulator
-/// values that exceed a given threshold
-void trackFinding(int etaSlice)
-{
-  // The track will have coordinates (a1,b1), (a2,b2)
-  Float_t a1, b1, a2, b2;
-
-  int trackCount = 0;
-
-  for (Int_t rBin = 0; rBin < rResolution; rBin++) {
-    for (Int_t theta = 0; theta < thetaMax; theta++) {
-      if (getAccumulatorBin(etaSlice, rBin, theta) >= houghThreshold) {
-        if (localAccumulatorMaxima(etaSlice, rBin, theta) > getAccumulatorBin(etaSlice, rBin, theta)) {
-          continue;
-        }
-
-        if (theta >= 45 && theta <= 135) {
-          // y = (r - x cos(t)) / sin(t)
-          a1 = 0.0;
-          b1 = (getRValue(rBin) - a1 * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
-          a2 = alphaMax;
-          b2 = (getRValue(rBin) - a2 * cos(theta * DEG2RAD)) / sin(theta * DEG2RAD);
-        } else {
-          // x = (r - y sin(t)) / cos(t);
-          b1 = 0.0;
-          a1 = (getRValue(rBin) - b1 * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
-          b2 = betaMax;
-          a2 = (getRValue(rBin) - b2 * sin(theta * DEG2RAD)) / cos(theta * DEG2RAD);
-        }
-        // cout << "Found a track at [" << etaSlice << "][" << getRValue(rBin) << "][" << theta << "] with a peak of "
-        // << getAccumulatorBin(etaSlice, rBin, theta) << " points"
-        //     << endl << "Track coordinates: " << a1 << "," << b1 << " - " << a2 << "," << b2 << endl;
-        // cout << "xMax: " << xMax << " yMax: " << yMax << endl;
-        trackCount++;
-
-        setTrackParameters(etaSlice, a1, b1, a2, b2);
-      }
-    }
-  }
-  if (trackCount > 0) {
-    cout << "rMax " << rMax << " rResolution " << rResolution << endl;
-    cout << "Found " << trackCount << " tracks for η slice " << etaSlice << endl;
-  }
-}
-
-/// Calculate an approximate value for η. See [1]:p8 for more information. Values below taken from
-/// AliHLTConfMapPoint.cxx
-void calculateEta(int totalNumberOfClusters)
-{
-  for (int i = 0; i < totalNumberOfClusters; i++) {
-    Double_t radial = sqrt(clusterCollection->getClusterX(i) * clusterCollection->getClusterX(i) +
-                           clusterCollection->getClusterY(i) * clusterCollection->getClusterY(i) +
-                           clusterCollection->getClusterZ(i) * clusterCollection->getClusterZ(i));
-    Double_t eta =
-      0.5 * log((radial + clusterCollection->getClusterZ(i)) / (radial - clusterCollection->getClusterZ(i)));
-
-    // Store eta to be later used by the conformalMapping method
-    clusterCollection->setClusterEta(i, eta);
-  }
-}
-
-/// Discretize the eta values of all clusters into etaResolution bins
-void calculateEtaSlice(int totalNumberOfClusters)
-{
-  for (int i = 0; i < totalNumberOfClusters; i++) {
-    Float_t eta = clusterCollection->getClusterEta(i);
-
-    if (etaMax - etaMin == 0) {
-      cerr << "The minimum and maximum eta value of all clusters is identical" << endl;
-      exit(1);
-    }
-
-    Double_t etaSlice = (etaResolution * (eta - etaMin)) / (etaMax - etaMin);
-
-    clusterCollection->setClusterEtaSlice(i, (Int_t)etaSlice);
-  }
-}
-
-void conformalMapping(int totalNumberOfClusters)
-{
-  for (int i = 0; i < totalNumberOfClusters; i++) {
-    Float_t x = clusterCollection->getClusterX(i);
-    Float_t y = clusterCollection->getClusterY(i);
-
-    // Equation (2) from paper [1]
-    Float_t alpha = x / (x * x + y * y);
-    Float_t beta = y / (x * x + y * y);
-
-    // cout << "i: " << i << " X: " << x << " Y: " << y << " A: " << alpha << " B: " << beta << " η: " << eta << " η
-    // slice: " << etaSlice
-    //     << endl;
-
-    clusterCollection->setClusterAlpha(i, alpha);
-    clusterCollection->setClusterBeta(i, beta);
-  }
-}
-
-void conformalMapping2()
-{
-  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
-    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
-         clusterNumber++) {
-      Float_t x = clusterCollection->getClusterX(padRow, clusterNumber);
-      Float_t y = clusterCollection->getClusterY(padRow, clusterNumber);
-
-      // Equation (2) from paper [1]
-      Float_t alpha = x / (x * x + y * y);
-      Float_t beta = y / (x * x + y * y);
-
-      clusterCollection->setClusterAlpha(padRow, clusterNumber, alpha);
-      clusterCollection->setClusterBeta(padRow, clusterNumber, beta);
-    }
-  }
-}
-
-void transformCartesian(int totalNumberOfClusters)
-{
-  thetaMax = thetaResolution;
-  // Trigonometrically, the maximum distance is designated by the square root of the summation of the squares of the x
-  // and y dimensions
-  rMax = ceil(sqrt(xMax * xMax + yMax * yMax));
-
-  // The lines will have -rMax <= r <= rMax and 0 <= theta <= thetaMax. The total space needed is thus 2 * rMax *
-  // thetaMax
-  accumulator.resize(2 * rMax * thetaMax * rResolution, 0);
-
-  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    Float_t x = clusterCollection->getClusterX(i);
-    Float_t y = clusterCollection->getClusterY(i);
-
-    for (Int_t theta = 0; theta < thetaMax; theta++) {
-      double r = (x * cos(theta * DEG2RAD)) + (y * sin(theta * DEG2RAD));
-      //      cout << "x: " << x << " y: " << y << " theta: " << theta << " r: " << r
-      //           << " round r: " << round((r + rMax) * rResolution) << endl;
-
-      // Use a discreet value for r by rounding r. Then, rMax is added to r to change its range from -rMax <= r <= rMax
-      // to 0 <= r <= 2 * rMax
-      setAccumulatorBin(0, round((r + rMax) * rResolution), theta);
-    }
-  }
-}
-
-void transformConformalMapping(int totalNumberOfClusters)
-{
-  thetaMax = 180;
-  // Trigonometrically, the maximum distance is designated by the square root of the summation of the squares of the x
-  // and y dimensions
-  rMax = ceil(sqrt(alphaMax * alphaMax + betaMax * betaMax));
-
-  // cout << "rMin: " << -rMax << " rMax: " << rMax << endl;
-
-  // Reserve space for the accumulator bins
-  accumulator.resize(etaResolution * rResolution * thetaMax + rResolution * thetaMax + thetaMax, 0);
-
-  cout << "Accumulator size: " << 2 * rMax* thetaMax* rResolution* etaResolution << endl;
-  cout << "Alternative accumulator size: " << etaResolution* rResolution* thetaMax + rResolution* thetaMax + thetaMax
-       << endl;
-
-  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    Float_t a = clusterCollection->getClusterAlpha(i);
-    Float_t b = clusterCollection->getClusterBeta(i);
-    Float_t eta = clusterCollection->getClusterEta(i);
-    UInt_t etaSlice = clusterCollection->getClusterEtaSlice(i);
-
-    for (Int_t theta = 0; theta < thetaMax; theta++) {
-      double r = (a * cos(theta * DEG2RAD)) + (b * sin(theta * DEG2RAD));
-      int rBin = getRBinValue(r);
-
-      if (etaSlice == 20) {
-        cout << "Cluster: " << i << " a: " << a << " b: " << b << " theta: " << theta << " rMin: " << -rMax
-             << " r: " << r << " rMax: " << rMax << " rBin: " << rBin << " eta: " << eta << " etaSlice: " << etaSlice
-             << endl;
-      }
-
-      // Use a discreet value for r by rounding r. Then, rMax is added to r to change its range from -rMax <= r <= rMax
-      // to 0 <= r <= 2 * rMax
-      setAccumulatorBin(etaSlice, rBin, theta);
-    }
-  }
-}
-
-/// Determine the minimum and maximum values of the pseudorapidity (eta). That way, the TPC digits can be transformed in
-/// two dimensions instead of three in slices of similar pseudorapidity
-void determineMinMaxEta(int totalNumberOfClusters)
-{
-  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-
-    Double_t eta = clusterCollection->getClusterEta(i);
-
-    // Set initial values to etaMin and etaMax
-    if (i == 0) {
-      etaMin = eta;
-      etaMax = eta;
-      continue;
-    }
-
-    if (eta < etaMin) {
-      etaMin = eta;
-    } else if (eta > etaMax) {
-      etaMax = eta;
-    }
-  }
-  cout << "Minimum eta: " << etaMin << " Maximum eta: " << etaMax << endl;
-}
-
-/// Determine the maximum ceiling to x,y,z coordinates from the clusterCartesianCoordinates vector to
-/// later allocate the
-/// hough transform accumulator
-void determineMinMaxXY(int totalNumberOfClusters)
-{
-  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    if (i == 0) {
-      xMin = clusterCollection->getClusterX(i);
-      xMax = clusterCollection->getClusterX(i);
-      yMin = clusterCollection->getClusterY(i);
-      yMax = clusterCollection->getClusterY(i);
-      continue;
-    }
-    if (clusterCollection->getClusterX(i) < xMin) {
-      xMin = clusterCollection->getClusterX(i);
-    } else if (clusterCollection->getClusterX(i) > xMax) {
-      xMax = clusterCollection->getClusterX(i);
-    }
-
-    if (clusterCollection->getClusterY(i) < yMin) {
-      yMin = clusterCollection->getClusterY(i);
-    } else if (clusterCollection->getClusterY(i) > yMax) {
-      yMax = clusterCollection->getClusterY(i);
-    }
-  }
-  cout << "xMin: " << xMin << " xMax: " << xMax << " yMin: " << yMin << " yMax: " << yMax << endl;
-}
-
-/// Determine the maximum ceiling to a and b conformal mapping coordinates from the clusterCartesianCoordinates vector
-/// to later allocate the hough transform accumulator
-void determineMinMaxAlphaBeta(int totalNumberOfClusters)
-{
-  for (Int_t i = 0; i < totalNumberOfClusters; i++) {
-    if (i == 0) {
-      alphaMin = clusterCollection->getClusterX(i);
-      alphaMax = clusterCollection->getClusterX(i);
-      betaMin = clusterCollection->getClusterY(i);
-      betaMax = clusterCollection->getClusterY(i);
-      continue;
-    }
-    if (clusterCollection->getClusterAlpha(i) < alphaMin) {
-      alphaMin = clusterCollection->getClusterAlpha(i);
-    } else if (clusterCollection->getClusterX(i) > alphaMax) {
-      alphaMax = clusterCollection->getClusterAlpha(i);
-    }
-
-    if (clusterCollection->getClusterY(i) < betaMin) {
-      betaMin = clusterCollection->getClusterBeta(i);
-    } else if (clusterCollection->getClusterBeta(i) > betaMax) {
-      betaMax = clusterCollection->getClusterBeta(i);
-    }
-  }
-  cout << "alphaMin: " << alphaMin << " alphaMax: " << alphaMax << " betaMin: " << betaMin << " betaMax: " << betaMax
-       << endl;
-}
-
-void printData(int totalNumberOfClusters)
-{
-  cout << "ID" << setw(8) << "X" << setw(8) << "Y" << setw(8) << "Z" << setw(9) << "Pad Row" << setw(10) << "Pad"
-       << setw(10) << "Time" << setw(10) << "Charge" << endl;
-
-  for (int i = 0; i < totalNumberOfClusters; i++) {
-    cout << (AliHLTUInt32_t)clusterCollection->getClusterID(i) << setw(13) << clusterCollection->getClusterX(i)
-         << setw(13) << clusterCollection->getClusterY(i) << setw(13) << clusterCollection->getClusterZ(i) << setw(8)
-         << (UInt_t)clusterCollection->getClusterPadRow(i) << setw(8) << clusterCollection->getClusterPad(i) << setw(8)
-         << clusterCollection->getClusterTime(i) << setw(7) << clusterCollection->getClusterCharge(i) << endl;
+  for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
+       clusterNumber++) {
+    cout << (AliHLTUInt32_t)clusterCollection->getClusterID(padRow, clusterNumber) << setw(13)
+         << clusterCollection->getClusterX(padRow, clusterNumber) << setw(13)
+         << clusterCollection->getClusterY(padRow, clusterNumber) << setw(13)
+         << clusterCollection->getClusterZ(padRow, clusterNumber) << setw(8)
+         << clusterCollection->getClusterPad(padRow, clusterNumber) << setw(8)
+         << clusterCollection->getClusterTime(padRow, clusterNumber) << setw(7)
+         << clusterCollection->getClusterCharge(padRow, clusterNumber) << endl;
   }
 }
 
 int main(int argc, char** argv)
 {
-  if (argc != 2) {
-    std::cerr << "Usage: " << argv[0] << " <event number>" << endl;
-    std::exit(1);
+
+  boost::program_options::options_description desc("Allowed options");
+  desc.add_options()("help", "Display this help and exit")(
+    "event", boost::program_options::value<std::string>(),
+    "Specify an event inside the emulated-tpc-clusters directory")(
+    "print", boost::program_options::value<int>(), "Print cluster information for a specific pad row and exit");
+
+  boost::program_options::variables_map vm;
+  boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+  boost::program_options::notify(vm);
+
+  if (vm.count("help")) {
+    cout << desc << endl;
+    return 1;
+  }
+
+  if (!vm.count("event")) {
+    cout << desc << endl;
+    cout << "Please provide an event number!" << endl;
+    return 1;
   }
 
   // Create data path
   std::string dataFilename = "emulated-tpc-clusters/event";
-  dataFilename += argv[1];
+  dataFilename += vm["event"].as<std::string>();
 
   boost::filesystem::path dataPath(dataFilename);
   boost::filesystem::directory_iterator endIterator;
@@ -499,23 +154,17 @@ int main(int argc, char** argv)
 
   cout << "Added " << totalNumberOfClusters << " clusters from " << totalNumberOfDataFiles << " data files." << endl;
 
-  for (int i = 0; i < Transform::GetNRows(); i++) {
-    cout << clusterCollection->getNumberOfClustersPerPadRow(i) << " Clusters for PadRow " << i << endl;
+  if (vm.count("print")) {
+    printData(vm["print"].as<int>());
+    return 1;
   }
 
-  // DEBUG
-  determineMinMaxXY(totalNumberOfClusters);
-  calculateEta(totalNumberOfClusters);
-  determineMinMaxEta(totalNumberOfClusters);
-  calculateEtaSlice(totalNumberOfClusters);
-  drawCartesianClusters1D(15, totalNumberOfClusters);
-  conformalMapping(totalNumberOfClusters);
-  conformalMapping2();
-  determineMinMaxAlphaBeta(totalNumberOfClusters);
-  drawConformalMappingClusters1D(15, totalNumberOfClusters);
-  drawCartesianClusters(totalNumberOfClusters);
+  // for (int i = 0; i < Transform::GetNRows(); i++) {
+  //  cout << clusterCollection->getNumberOfClustersPerPadRow(i) << " Clusters for PadRow " << i << endl;
+  //}
 
-  // printData(totalNumberOfClusters);
+  draw1DCartesianClustersPerEtaSlice(25);
+  drawCartesianClusters();
 
   Float_t ptmin = 0.1 * Transform::GetSolenoidField();
   // FIXME: find the correct value for zvertex
@@ -537,174 +186,6 @@ int main(int argc, char** argv)
     //    hough->AddTracks();
   }
 
-  /*
-    for (UInt_t patch = 0; patch < AliceO2::Hough::Transform::GetNPatches(); patch++) {
-
-      fHoughTransformer[patch] = new AliceO2::Hough::TransformerRow(0, patch, fNEtaSegments);
-      fHoughTransformer[patch]->SetLastTransformer(lasttransformer);
-      lasttransformer = fHoughTransformer[patch];
-
-      fHoughTransformer[patch]->CreateHistograms()
-    }
-  */
-
-  /*
-    for (UInt_t slice = 0; slice < AliceO2::Hough::Transform::GetNSlice(); slice++) {
-      for (UInt_t patch = 0; patch < AliceO2::Hough::Transform::GetNPatches(); patch++) {
-        AliceO2::Hough::TransformerRow row(slice, patch, etaResolution);
-
-        // Allocate space for the accumulator and determine initial values. This must be done before executing the
-    TransformCircle method
-        row.CreateHistograms(rResolution, xMin, xMax, thetaResolution, yMin, yMax);
-
-        // Perform the actual transformation
-        row.TransformCircle(clusterCollection);
-
-        cout << "Number of Eta Segments: " << row.GetNEtaSegments() << " - etaResolution: " << etaResolution << endl;
-
-        for (Int_t segment = 0; segment < row.GetNEtaSegments(); segment++) {
-          // Get a pointer for the accumulator for each eta slice
-          AliceO2::Hough::Accumulator* accumulatorPointer = row.GetHistogram(segment);
-
-          if (accumulatorPointer->GetNEntries() > 0) {
-            cout << "Number of entries in the Accumulator for eta segment " << segment << ": "
-                 << accumulatorPointer->GetNEntries() << endl;
-            exit(0);
-          }
-        }
-        // Resets all the histograms. Should be done when processing new slice
-        row.Reset();
-
-        exit(0);
-      }
-    }
-  */
-  /*
-    AliceO2::Hough::TransformerRow row(0, 0, etaResolution);
-
-    // Allocate space for the accumulator. This must be done before executing the TransformCircle method
-    row.CreateHistograms(rResolution, xMin, xMax, thetaResolution, yMin, yMax);
-
-  //  row.SetLowerThreshold(3);
-  //  row.SetUpperThreshold(5);
-
-    // Performs the actual transformation
-    row.TransformCircle(clusterCollection);
-
-    cout << "Number of Eta Segments: " << row.GetNEtaSegments() << " - etaResolution: " << etaResolution << endl;
-
-    for ( Int_t segment = 0; segment < row.GetNEtaSegments(); segment++) {
-      //Get a pointer for the accumulator for each eta slice
-      AliceO2::Hough::Accumulator* accumulatorPointer = row.GetHistogram(segment);
-
-      if (accumulatorPointer->GetNEntries() > 0) {
-        cout << "Number of entries in the Accumulator for eta segment "<< segment << ": " <<
-  accumulatorPointer->GetNEntries() << endl;
-        exit(0);
-      }
-
-      //cout << "Number of entries in the Accumulator for eta segment "<< segment << ": " <<
-  accumulatorPointer->GetNEntries() << endl;
-
-      //FIXME: The accumulator array can be accessed directly through here:
-      //int* GetContentArray() const { return fContent; }
-    }
-
-    // Resets all the histograms. Should be done when processing new slice
-    row.Reset();
-  */
-  //  AliceO2::Hough::Accumulator** test = new AliceO2::Hough::Accumulator* [5];
-
-  // AliceO2::Hough::Accumulator test2;
-  // DEBUG
-  /*  totalNumberOfClusters = 100;
-    for (int kk = 0; kk < 6; kk++) {
-      setClusterParameters(kk, (float)9.0 + kk, (float)17.0, 1);
-    }
-
-    for (int kk = 6; kk < 11; kk++) {
-      setClusterParameters(kk, 9.0 + kk - 5, 17.0 + kk - 5, 1);
-    }
-
-    for (int kk = 11; kk < 150; kk++) {
-      setClusterParameters(kk, 10, 19.0 + kk - 11, 1);
-    }
-  */
-  /*  totalNumberOfClusters = 20000;
-    // printData(totalNumberOfClusters);
-
-    // Allocate space for the conformal mapping parameter vector
-    clusterConformalMappingCoordinates.resize(totalNumberOfClusters * clusterConformalMappingParameters);
-
-    calculateEta(totalNumberOfClusters);
-
-    // Determine the minimum and maximum values of eta. That way the TPC digits can be grouped into
-    pseudorapidity bins
-    determineMinMaxEta(totalNumberOfClusters);
-
-    // Discretize the eta values of all clusters into etaResolution bins
-    calculateEtaSlice(totalNumberOfClusters);
-
-    // Convert the TPC cluster coordinates from the cartesian to the conformal mapping system
-    conformalMapping(totalNumberOfClusters);
-
-    // drawConformalMappingClusters1D(totalNumberOfClusters);
-
-    // Determine the maximum dimensions of the clusters for the accumulator
-    determineMinMaxXY(totalNumberOfClusters);
-
-    // Perform the hough transform on the TPC clusters for the cartesian system
-    // transformCartesian(totalNumberOfClusters);
-
-    // Determine the maximum dimensions of the clusters for the accumulator
-    determineMinMaxAlphaBeta(totalNumberOfClusters);
-
-    // Perform the hough transform on the TPC clusters for the conformal mapping system
-    transformConformalMapping(totalNumberOfClusters);
-
-    // Locate tracks for each η slice
-    //for (int etaSlice = 0; etaSlice <= etaResolution; etaSlice++) {
-    //  trackFinding(etaSlice);
-    }
-    trackFinding(15);
-
-    //drawAccumulatorHistogram();
-
-    drawCartesianClusters(totalNumberOfClusters);
-    drawCartesianClusters1D(15, totalNumberOfClusters);
-    drawConformalMappingClusters(totalNumberOfClusters);
-    drawConformalMappingClusters1D(15, totalNumberOfClusters);
-    drawTracks(totalNumberOfClusters);
-
-    int i;
-    int array[etaResolution + 1];
-    for ( i = 0; i <= etaResolution; i++) {
-      array[i] = 0;
-    }
-
-
-    for ( i = 0; i < totalNumberOfClusters; i++) {
-      array[getClusterEtaSlice(i)]++;
-    }
-
-    for ( i = 0; i <= etaResolution; i++) {
-      cout << i << " " << array[i] << endl;
-    }
-
-    for (int theta = 0; theta < thetaMax; theta++) {
-      for (int rBin = 0; rBin < rResolution; rBin++) {
-        cout << theta << " " << rBin << " " << getAccumulatorBin(15, rBin, theta ) << endl;
-      }
-    }
-
-    return 0;
-
-    // Clear the track coordinates so the vector can be used for the conformal mapping tracker
-    trackCoordinates.clear();
-
-    // Draw the accumulator data as curves
-    drawAccumulatorCurves(totalNumberOfClusters);
-  */
   delete clusterCollection;
 
   return 0;

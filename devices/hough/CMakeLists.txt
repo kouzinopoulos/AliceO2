@@ -57,7 +57,7 @@ ForEach(_file RANGE 0 ${_length})
   list(GET Exe_Source ${_file} _src)
   set(EXE_NAME ${_name})
   set(SRCS ${_src})
-  set(DEPENDENCIES dl Core RIO Gpad Hist ALICEHOUGH boost_system boost_filesystem)
+  set(DEPENDENCIES dl Core RIO Gpad Hist ALICEHOUGH boost_system boost_filesystem boost_program_options)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
 

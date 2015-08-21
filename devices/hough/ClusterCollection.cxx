@@ -81,11 +81,6 @@ UInt_t ClusterCollection::processData(std::string dataPath, std::string dataType
                                spacepoints->GetZ(clusterID) };
     Transform::LocHLT2Raw(coordinates, currentSlice, spacepoints->GetPadRow(clusterID));
 
-    setClusterParameters(clusterID, spacepoints->GetX(clusterID), spacepoints->GetY(clusterID),
-                         spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID),
-                         spacepoints->GetPadRow(clusterID), coordinates[1], coordinates[2], currentSlice,
-                         currentPartition);
-
     setClusterParameters2(clusterID, spacepoints->GetX(clusterID), spacepoints->GetY(clusterID),
                           spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID),
                           spacepoints->GetPadRow(clusterID), coordinates[1], coordinates[2], currentSlice,
