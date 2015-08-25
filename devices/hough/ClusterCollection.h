@@ -35,12 +35,6 @@ struct clusterDataFormat {
   Double_t mX;
   Double_t mY;
   Double_t mZ;
-
-  Double_t mAlpha;
-  Double_t mBeta;
-  Double_t mEta;
-
-  UInt_t mEtaSlice;
 };
 
 class ClusterCollection {
@@ -77,30 +71,22 @@ public:
   void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice) { clusterData[clusterNumber].mEtaSlice = etaSlice; }
 */
 
-  UInt_t getNumberOfClustersPerPadRow(UInt_t padRow) { return clusterData2[padRow].size(); }
+  UInt_t getNumberOfClustersPerPadRow(UInt_t padRow) { return clusterData[padRow].size(); }
 
-  UInt_t getClusterID(UInt_t padRow, int clusterNumber) { return clusterData2[padRow][clusterNumber].mID; }
-  UInt_t getClusterCharge(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mCharge; }
+  UInt_t getClusterID(UInt_t padRow, int clusterNumber) { return clusterData[padRow][clusterNumber].mID; }
+  UInt_t getClusterCharge(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mCharge; }
 
-  UInt_t getClusterSlice(UInt_t padRow, int clusterNumber) { return clusterData2[padRow][clusterNumber].mTPCSlice; }
-  UInt_t getClusterPartition(UInt_t padRow, int clusterNumber) { return clusterData2[padRow][clusterNumber].mTPCPartition; }
+  UInt_t getClusterSlice(UInt_t padRow, int clusterNumber) { return clusterData[padRow][clusterNumber].mTPCSlice; }
+  UInt_t getClusterPartition(UInt_t padRow, int clusterNumber) { return clusterData[padRow][clusterNumber].mTPCPartition; }
 
-  Double_t getClusterPad(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mPad; }
-  Double_t getClusterTime(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mTime; }
+  Double_t getClusterPad(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mPad; }
+  Double_t getClusterTime(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mTime; }
 
-  Double_t getClusterX(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mX; }
-  Double_t getClusterY(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mY; }
-  Double_t getClusterZ(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mZ; }
+  Double_t getClusterX(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mX; }
+  Double_t getClusterY(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mY; }
+  Double_t getClusterZ(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mZ; }
 
-  Double_t getClusterAlpha(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mAlpha; }
-  Double_t getClusterBeta(UInt_t padRow, UInt_t clusterNumber) { return clusterData2[padRow][clusterNumber].mBeta; }
-
-  Int_t getClusterEtaSlice(UInt_t padRow, int clusterNumber) { return clusterData2[padRow][clusterNumber].mEtaSlice; }
-
-  void setClusterAlpha(UInt_t padRow, UInt_t clusterNumber, Double_t alpha) { clusterData2[padRow][clusterNumber].mAlpha = alpha; }
-  void setClusterBeta(UInt_t padRow, UInt_t clusterNumber, Double_t beta) { clusterData2[padRow][clusterNumber].mBeta = beta; }
-
-  void setClusterParameters2(UInt_t clusterID, Double_t x, Double_t y, Double_t z, UInt_t charge, UChar_t padRow,
+  void setClusterParameters(UInt_t clusterID, Double_t x, Double_t y, Double_t z, UInt_t charge, UChar_t padRow,
                              Double_t pad, Double_t time, UInt_t tpcSlice, UInt_t tpcPartition)
   {
     clusterDataFormat data;
@@ -115,16 +101,13 @@ public:
     data.mY = y;
     data.mZ = z;
 
-    clusterData2[(UInt_t)padRow].push_back(data);
+    clusterData[(UInt_t)padRow].push_back(data);
   }
 
 protected:
 private:
   // Information per cluster
-  std::vector<clusterDataFormat> clusterData;
-
-  // FIXME: replace clusterData with clusterData2
-  std::vector<std::vector<clusterDataFormat>> clusterData2;
+  std::vector<std::vector<clusterDataFormat>> clusterData;
 
   std::unique_ptr<AliHLTTPCSpacePointContainer> spacepoints;
 };

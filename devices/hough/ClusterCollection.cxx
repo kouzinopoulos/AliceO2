@@ -9,7 +9,7 @@ using namespace std;
 using namespace AliceO2::Hough;
 
 // One clusterDataFormat vector is allocated per pad row. Total vectors are Transform::GetNRows() (159)
-ClusterCollection::ClusterCollection() : clusterData2(Transform::GetNRows()) {}
+ClusterCollection::ClusterCollection() : clusterData(Transform::GetNRows()) {}
 
 ClusterCollection::~ClusterCollection() {}
 
@@ -81,7 +81,7 @@ UInt_t ClusterCollection::processData(std::string dataPath, std::string dataType
                                spacepoints->GetZ(clusterID) };
     Transform::LocHLT2Raw(coordinates, currentSlice, spacepoints->GetPadRow(clusterID));
 
-    setClusterParameters2(clusterID, spacepoints->GetX(clusterID), spacepoints->GetY(clusterID),
+    setClusterParameters(clusterID, spacepoints->GetX(clusterID), spacepoints->GetY(clusterID),
                           spacepoints->GetZ(clusterID), spacepoints->GetCharge(clusterID),
                           spacepoints->GetPadRow(clusterID), coordinates[1], coordinates[2], currentSlice,
                           currentPartition);

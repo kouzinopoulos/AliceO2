@@ -10,6 +10,7 @@
 
 using namespace AliceO2::Hough;
 
+/*
 void draw1DCartesianClustersPerEtaSlice(int etaSlice)
 {
   TCanvas* cartesianClustersPerEtaSliceCanvas1D =
@@ -34,6 +35,7 @@ void draw1DCartesianClustersPerEtaSlice(int etaSlice)
 
   cartesianClustersPerEtaSliceCanvas1D->Print("cartesianClustersPerEtaSlice.pdf");
 }
+*/
 
 void draw1DCartesianClustersPerPadRow(int padRow)
 {
@@ -63,8 +65,10 @@ void drawCartesianClusters()
   for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
     for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
          clusterNumber++) {
-      // cout << "graph: " << i << " " << getClusterX(i) << " " << getClusterY(i) << " " <<
-      // getClusterZ(i) << " " << endl;
+      cout << "PadRow: " << padRow << " #: " << clusterNumber << " "
+           << clusterCollection->getClusterX(padRow, clusterNumber) << " "
+           << clusterCollection->getClusterY(padRow, clusterNumber) << " "
+           << clusterCollection->getClusterZ(padRow, clusterNumber) << " " << endl;
       cartesianClustersGraph2D->SetPoint(padRow, clusterCollection->getClusterX(padRow, clusterNumber),
                                          clusterCollection->getClusterY(padRow, clusterNumber),
                                          clusterCollection->getClusterZ(padRow, clusterNumber));
@@ -163,7 +167,7 @@ int main(int argc, char** argv)
   //  cout << clusterCollection->getNumberOfClustersPerPadRow(i) << " Clusters for PadRow " << i << endl;
   //}
 
-  draw1DCartesianClustersPerEtaSlice(25);
+  draw1DCartesianClustersPerPadRow(25);
   drawCartesianClusters();
 
   Float_t ptmin = 0.1 * Transform::GetSolenoidField();
