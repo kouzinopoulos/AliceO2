@@ -10,7 +10,6 @@
 
 using namespace AliceO2::Hough;
 
-/*
 void draw1DCartesianClustersPerEtaSlice(int etaSlice)
 {
   TCanvas* cartesianClustersPerEtaSliceCanvas1D =
@@ -35,7 +34,6 @@ void draw1DCartesianClustersPerEtaSlice(int etaSlice)
 
   cartesianClustersPerEtaSliceCanvas1D->Print("cartesianClustersPerEtaSlice.pdf");
 }
-*/
 
 void draw1DCartesianClustersPerPadRow(int padRow)
 {
@@ -65,10 +63,6 @@ void drawCartesianClusters()
   for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
     for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
          clusterNumber++) {
-      cout << "PadRow: " << padRow << " #: " << clusterNumber << " "
-           << clusterCollection->getClusterX(padRow, clusterNumber) << " "
-           << clusterCollection->getClusterY(padRow, clusterNumber) << " "
-           << clusterCollection->getClusterZ(padRow, clusterNumber) << " " << endl;
       cartesianClustersGraph2D->SetPoint(padRow, clusterCollection->getClusterX(padRow, clusterNumber),
                                          clusterCollection->getClusterY(padRow, clusterNumber),
                                          clusterCollection->getClusterZ(padRow, clusterNumber));
@@ -83,7 +77,74 @@ void drawCartesianClusters()
   cartesianClustersCanvas->Print("cartesianClusters2D.pdf");
 }
 
-void printData(int padRow)
+/// Calculate an approximate value for η. See [1]:p8 for more information. Values below taken from
+/// AliHLTConfMapPoint.cxx
+void calculateEta(int totalNumberOfClusters)
+{
+  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
+    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
+         clusterNumber++) {
+      Double_t radial = sqrt(
+        clusterCollection->getClusterX(padRow, clusterNumber) * clusterCollection->getClusterX(padRow, clusterNumber) +
+        clusterCollection->getClusterY(padRow, clusterNumber) * clusterCollection->getClusterY(padRow, clusterNumber) +
+        clusterCollection->getClusterZ(padRow, clusterNumber) * clusterCollection->getClusterZ(padRow, clusterNumber));
+      Double_t eta = 0.5 * log((radial + clusterCollection->getClusterZ(padRow, clusterNumber)) /
+                               (radial - clusterCollection->getClusterZ(padRow, clusterNumber)));
+
+      // Store eta to the cluster header
+      clusterCollection->setClusterEta(padRow, clusterNumber, eta);
+    }
+  }
+}
+
+/// Determine the minimum and maximum values of the pseudorapidity (eta). That way, the TPC digits can be
+/// transformed in two dimensions instead of three in slices of similar pseudorapidity
+void determineMinMaxEta(int totalNumberOfClusters)
+{
+  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
+    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
+         clusterNumber++) {
+      Double_t eta = clusterCollection->getClusterEta(padRow, clusterNumber);
+
+      // Set initial values to etaMin and etaMax
+      if (padRow == 0 && clusterNumber == 0) {
+        etaMin = eta;
+        etaMax = eta;
+        continue;
+      }
+
+      if (eta < etaMin) {
+        etaMin = eta;
+      }
+      if (eta > etaMax) {
+        etaMax = eta;
+      }
+    }
+  }
+  cout << "Minimum eta: " << etaMin << " Maximum eta: " << etaMax << endl;
+}
+
+/// Discretize the eta values of all clusters into etaResolution bins
+void calculateEtaSlice(int totalNumberOfClusters)
+{
+  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
+    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
+         clusterNumber++) {
+      Double_t eta = clusterCollection->getClusterEta(padRow, clusterNumber);
+
+      if (etaMax - etaMin == 0) {
+        cerr << "The minimum and maximum eta value of all clusters are identical" << endl;
+        exit(1);
+      }
+
+      Double_t etaSlice = (etaSlices * (eta - etaMin)) / (etaMax - etaMin);
+
+      clusterCollection->setClusterEtaSlice(padRow, clusterNumber, (Int_t)etaSlice);
+    }
+  }
+}
+
+void printClusterInformation(int padRow)
 {
   cout << "ID" << setw(16) << "X" << setw(14) << "Y" << setw(12) << "Z" << setw(9) << "Pad" << setw(10) << "Time"
        << setw(10) << "Charge" << endl;
@@ -106,7 +167,7 @@ int main(int argc, char** argv)
   boost::program_options::options_description desc("Allowed options");
   desc.add_options()("help", "Display this help and exit")(
     "event", boost::program_options::value<std::string>(),
-    "Specify an event inside the emulated-tpc-clusters directory")(
+    "Specify an event to load inside the emulated-tpc-clusters directory <mandatory>")(
     "print", boost::program_options::value<int>(), "Print cluster information for a specific pad row and exit");
 
   boost::program_options::variables_map vm;
@@ -140,13 +201,12 @@ int main(int argc, char** argv)
 
   clusterCollection = new ClusterCollection();
 
-  // Traverse the filesystem and execute processData for each cluster file found
+  // Traverse the filesystem and call readData for each cluster file found
   if (boost::filesystem::exists(dataPath) && boost::filesystem::is_directory(dataPath)) {
     for (boost::filesystem::directory_iterator directoryIterator(dataPath); directoryIterator != endIterator;
          ++directoryIterator) {
       if (boost::filesystem::is_regular_file(directoryIterator->status())) {
-        totalNumberOfClusters +=
-          clusterCollection->processData(directoryIterator->path().string(), dataType, dataOrigin);
+        totalNumberOfClusters += clusterCollection->readData(directoryIterator->path().string(), dataType, dataOrigin);
         totalNumberOfDataFiles++;
       }
     }
@@ -159,7 +219,7 @@ int main(int argc, char** argv)
   cout << "Added " << totalNumberOfClusters << " clusters from " << totalNumberOfDataFiles << " data files." << endl;
 
   if (vm.count("print")) {
-    printData(vm["print"].as<int>());
+    printClusterInformation(vm["print"].as<int>());
     return 1;
   }
 
@@ -167,7 +227,14 @@ int main(int argc, char** argv)
   //  cout << clusterCollection->getNumberOfClustersPerPadRow(i) << " Clusters for PadRow " << i << endl;
   //}
 
-  draw1DCartesianClustersPerPadRow(25);
+  calculateEta(totalNumberOfClusters);
+  // Determine the minimum and maximum values of eta. That way the TPC digits can be grouped into pseudorapidity bins
+  determineMinMaxEta(totalNumberOfClusters);
+  // Discretize the eta values of all clusters into etaResolution bins
+  calculateEtaSlice(totalNumberOfClusters);
+
+//  draw1DCartesianClustersPerPadRow(25);
+  draw1DCartesianClustersPerEtaSlice(25);
   drawCartesianClusters();
 
   Float_t ptmin = 0.1 * Transform::GetSolenoidField();

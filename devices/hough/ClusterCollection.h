@@ -35,6 +35,10 @@ struct clusterDataFormat {
   Double_t mX;
   Double_t mY;
   Double_t mZ;
+
+  // Estimation of the cluster's pseudorapidity as calculated by the calculateEta and calculateEtaSlice methods
+  Double_t mEta;
+  UInt_t mEtaSlice;
 };
 
 class ClusterCollection {
@@ -42,34 +46,8 @@ public:
   ClusterCollection();
   virtual ~ClusterCollection();
 
-  /// Load cluster information to memory from a directory
-  UInt_t processData(std::string dataPath, std::string dataType, std::string dataOrigin);
-
-/*
-  UInt_t getClusterID(int clusterNumber) { return clusterData[clusterNumber].mID; }
-  UInt_t getClusterCharge(int clusterNumber) { return clusterData[clusterNumber].mCharge; }
-
-  UInt_t getClusterSlice(int clusterNumber) { return clusterData[clusterNumber].mTPCSlice; }
-  UInt_t getClusterPartition(int clusterNumber) { return clusterData[clusterNumber].mTPCPartition; }
-
-  UChar_t getClusterPadRow(int clusterNumber) { return clusterData[clusterNumber].mPadRow; }
-  Double_t getClusterPad(int clusterNumber) { return clusterData[clusterNumber].mPad; }
-  Double_t getClusterTime(int clusterNumber) { return clusterData[clusterNumber].mTime; }
-
-  Double_t getClusterX(int clusterNumber) { return clusterData[clusterNumber].mX; }
-  Double_t getClusterY(int clusterNumber) { return clusterData[clusterNumber].mY; }
-  Double_t getClusterZ(int clusterNumber) { return clusterData[clusterNumber].mZ; }
-
-  Double_t getClusterAlpha(int clusterNumber) { return clusterData[clusterNumber].mAlpha; }
-  Double_t getClusterBeta(int clusterNumber) { return clusterData[clusterNumber].mBeta; }
-  Double_t getClusterEta(int clusterNumber) { return clusterData[clusterNumber].mEta; }
-  Int_t getClusterEtaSlice(int clusterNumber) { return clusterData[clusterNumber].mEtaSlice; }
-
-  void setClusterAlpha(int clusterNumber, Double_t alpha) { clusterData[clusterNumber].mAlpha = alpha; }
-  void setClusterBeta(int clusterNumber, Double_t beta) { clusterData[clusterNumber].mBeta = beta; }
-  void setClusterEta(int clusterNumber, Double_t eta) { clusterData[clusterNumber].mEta = eta; }
-  void setClusterEtaSlice(int clusterNumber, UInt_t etaSlice) { clusterData[clusterNumber].mEtaSlice = etaSlice; }
-*/
+  /// Load cluster information to memory from disk
+  UInt_t readData(std::string dataPath, std::string dataType, std::string dataOrigin);
 
   UInt_t getNumberOfClustersPerPadRow(UInt_t padRow) { return clusterData[padRow].size(); }
 
@@ -85,6 +63,12 @@ public:
   Double_t getClusterX(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mX; }
   Double_t getClusterY(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mY; }
   Double_t getClusterZ(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mZ; }
+
+  Double_t getClusterEta(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mEta; }
+  UInt_t getClusterEtaSlice(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mEtaSlice; }
+
+  void setClusterEta(UInt_t padRow, UInt_t clusterNumber, Double_t eta) { clusterData[padRow][clusterNumber].mEta = eta; }
+  void setClusterEtaSlice(UInt_t padRow, UInt_t clusterNumber, UInt_t etaSlice) { clusterData[padRow][clusterNumber].mEtaSlice = etaSlice; }
 
   void setClusterParameters(UInt_t clusterID, Double_t x, Double_t y, Double_t z, UInt_t charge, UChar_t padRow,
                              Double_t pad, Double_t time, UInt_t tpcSlice, UInt_t tpcPartition)

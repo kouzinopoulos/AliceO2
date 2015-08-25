@@ -18,3 +18,9 @@
 #include "Transform.h"
 
 AliceO2::Hough::ClusterCollection* clusterCollection;
+
+Double_t etaMin;
+Double_t etaMax;
+
+// Project parameters
+int etaSlices = 100;

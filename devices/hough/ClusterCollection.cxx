@@ -13,7 +13,7 @@ ClusterCollection::ClusterCollection() : clusterData(Transform::GetNRows()) {}
 
 ClusterCollection::~ClusterCollection() {}
 
-UInt_t ClusterCollection::processData(std::string dataPath, std::string dataType, std::string dataOrigin)
+UInt_t ClusterCollection::readData(std::string dataPath, std::string dataType, std::string dataOrigin)
 {
   // Open data file for reading
   std::ifstream inputData(dataPath.c_str(), std::ifstream::binary);
