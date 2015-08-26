@@ -20,29 +20,30 @@ typedef struct DeviceOptions {
   bool printAll;
 } DeviceOptions_t;
 
-void draw1DCartesianClustersPerEtaSlice(int etaSlice, int TPCSlice)
+void draw1DCartesianClustersPerTPCSliceAndEtaSlice(int TPCSlice, int etaSlice)
 {
-  TCanvas* cartesianClustersPerEtaSlicePerTPCSliceCanvas1D =
-    new TCanvas("cartesianClustersPerEtaSlicePerTPCSliceCanvas1D", "Cartesian clusters per eta slice per TPC slice");
-  TGraph* cartesianClustersPerEtaSlicePerTPCSliceGraph1D = new TGraph();
+  TCanvas* cartesianClustersPerTPCSliceAndEtaSliceCanvas1D =
+    new TCanvas("cartesianClustersPerTPCSliceAndEtaSliceCanvas1D", "Cartesian clusters per TPC and eta slice");
+  TGraph* cartesianClustersPerTPCSliceAndEtaSliceGraph1D = new TGraph();
 
   for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
     for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
          clusterNumber++) {
-      if (clusterCollection->getClusterEtaSlice(padRow, clusterNumber) == etaSlice) {
-        cartesianClustersPerEtaSlicePerTPCSliceGraph1D->SetPoint(clusterNumber,
+      if (clusterCollection->getClusterTPCSlice(padRow, clusterNumber) == TPCSlice &&
+          clusterCollection->getClusterEtaSlice(padRow, clusterNumber) == etaSlice) {
+        cartesianClustersPerTPCSliceAndEtaSliceGraph1D->SetPoint(clusterNumber,
                                                                  clusterCollection->getClusterX(padRow, clusterNumber),
                                                                  clusterCollection->getClusterY(padRow, clusterNumber));
       }
     }
   }
 
-  cartesianClustersPerEtaSlicePerTPCSliceGraph1D->SetMarkerStyle(7);
-  cartesianClustersPerEtaSlicePerTPCSliceGraph1D->Draw("AP");
-  cartesianClustersPerEtaSlicePerTPCSliceGraph1D->GetXaxis()->SetRangeUser(80, 240);
-  cartesianClustersPerEtaSlicePerTPCSliceGraph1D->GetXaxis()->SetTitle("Pad Row");
+  cartesianClustersPerTPCSliceAndEtaSliceGraph1D->SetMarkerStyle(7);
+  cartesianClustersPerTPCSliceAndEtaSliceGraph1D->Draw("AP");
+  cartesianClustersPerTPCSliceAndEtaSliceGraph1D->GetXaxis()->SetRangeUser(80, 240);
+  cartesianClustersPerTPCSliceAndEtaSliceGraph1D->GetXaxis()->SetTitle("Pad Row");
 
-  cartesianClustersPerEtaSlicePerTPCSliceCanvas1D->Print("cartesianClustersPerEtaSlicePerTPCSlice.pdf");
+  cartesianClustersPerTPCSliceAndEtaSliceCanvas1D->Print("cartesianClustersPerEtaSlicePerTPCSlice.pdf");
 }
 
 void draw1DCartesianClustersPerEtaSlice(int etaSlice)
@@ -205,16 +206,6 @@ void printClusterInformation(int TPCSlice, int etaSlice)
   cout << "ID" << setw(13) << "X" << setw(10) << "Y" << setw(10) << "Z" << setw(9) << "Pad" << setw(9) << "Time"
        << setw(10) << "Charge" << endl;
 
-       cout << TPCSlice << " " << etaSlice << endl;
-
-       cout << boost::format("%1% %2% %3% %2% %1% \n") % "11" % "22" % "333"; // 'simple' style.
-
-       cout << boost::format("%1%, %2%, %|40t|%3%\n") % "abc" % "efg" % "hij";
-
-       cout << boost::format("%1%, %2%, %|40t|%3%\n") % "abc" % "efg" % "hij";
-
-       cout << boost::format("%1% %2% %|40t|%3%\n") % "abc" % "efg" % "hij";
-
   for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
     for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
          clusterNumber++) {
@@ -228,7 +219,7 @@ void printClusterInformation(int TPCSlice, int etaSlice)
            << clusterCollection->getClusterX(padRow, clusterNumber) << setw(10)
            << clusterCollection->getClusterY(padRow, clusterNumber) << setw(10)
            << clusterCollection->getClusterZ(padRow, clusterNumber) << setw(8)
-           << clusterCollection->getClusterPad(padRow, clusterNumber) << setw(7)
+           << clusterCollection->getClusterPad(padRow, clusterNumber) << setw(9)
            << clusterCollection->getClusterTime(padRow, clusterNumber) << setw(5)
            << clusterCollection->getClusterCharge(padRow, clusterNumber) << endl;
     }
@@ -244,8 +235,8 @@ inline bool parseCommandLine(int _argc, char* _argv[], DeviceOptions* _options)
   namespace bpo = boost::program_options;
   bpo::options_description desc("Options");
   desc.add_options()("event", bpo::value<std::string>()->required(), "Specify an event to load from disk <mandatory>")(
-    "TPCSlice", bpo::value<int>()->default_value(1), "Specify a TPC slice to draw clusters from")(
-    "etaSlice", bpo::value<int>()->default_value(25), "Specify an eta slice to draw clusters from")(
+    "TPCSlice", bpo::value<int>()->default_value(25), "Specify a TPC slice to draw clusters from")(
+    "etaSlice", bpo::value<int>()->default_value(29), "Specify an eta slice to draw clusters from")(
     "print", "Print information on clusters for the given TPC and eta slices and exit")(
     "print-all", "Print information on all clusters and exit")("help", "Print this help message");
 
@@ -335,6 +326,11 @@ int main(int argc, char** argv)
   // Discretize the eta values of all clusters into etaResolution bins
   calculateEtaSlice(totalNumberOfClusters);
 
+  //  draw1DCartesianClustersPerPadRow(25);
+  draw1DCartesianClustersPerEtaSlice(options.etaSlice);
+  draw1DCartesianClustersPerTPCSliceAndEtaSlice(options.TPCSlice, options.etaSlice);
+  drawCartesianClusters();
+
   if (options.print || options.printAll) {
     for (int i = 0; i < Transform::GetNRows(); i++) {
       cout << clusterCollection->getNumberOfClustersPerPadRow(i) << " Clusters for PadRow " << i << endl;
@@ -350,11 +346,6 @@ int main(int argc, char** argv)
     printClusterInformation();
     return 1;
   }
-
-  //  draw1DCartesianClustersPerPadRow(25);
-  // FIXME: Draw clusters per eta slice per TPC Sector
-  draw1DCartesianClustersPerEtaSlice(25);
-  drawCartesianClusters();
 
   Float_t ptmin = 0.1 * Transform::GetSolenoidField();
   // FIXME: find the correct value for zvertex
