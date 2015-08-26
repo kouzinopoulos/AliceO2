@@ -10,6 +10,41 @@
 
 using namespace AliceO2::Hough;
 
+typedef struct DeviceOptions {
+  std::string event;
+
+  int TPCSlice;
+  int etaSlice;
+
+  bool print;
+  bool printAll;
+} DeviceOptions_t;
+
+void draw1DCartesianClustersPerEtaSlice(int etaSlice, int TPCSlice)
+{
+  TCanvas* cartesianClustersPerEtaSlicePerTPCSliceCanvas1D =
+    new TCanvas("cartesianClustersPerEtaSlicePerTPCSliceCanvas1D", "Cartesian clusters per eta slice per TPC slice");
+  TGraph* cartesianClustersPerEtaSlicePerTPCSliceGraph1D = new TGraph();
+
+  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
+    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
+         clusterNumber++) {
+      if (clusterCollection->getClusterEtaSlice(padRow, clusterNumber) == etaSlice) {
+        cartesianClustersPerEtaSlicePerTPCSliceGraph1D->SetPoint(clusterNumber,
+                                                                 clusterCollection->getClusterX(padRow, clusterNumber),
+                                                                 clusterCollection->getClusterY(padRow, clusterNumber));
+      }
+    }
+  }
+
+  cartesianClustersPerEtaSlicePerTPCSliceGraph1D->SetMarkerStyle(7);
+  cartesianClustersPerEtaSlicePerTPCSliceGraph1D->Draw("AP");
+  cartesianClustersPerEtaSlicePerTPCSliceGraph1D->GetXaxis()->SetRangeUser(80, 240);
+  cartesianClustersPerEtaSlicePerTPCSliceGraph1D->GetXaxis()->SetTitle("Pad Row");
+
+  cartesianClustersPerEtaSlicePerTPCSliceCanvas1D->Print("cartesianClustersPerEtaSlicePerTPCSlice.pdf");
+}
+
 void draw1DCartesianClustersPerEtaSlice(int etaSlice)
 {
   TCanvas* cartesianClustersPerEtaSliceCanvas1D =
@@ -144,50 +179,126 @@ void calculateEtaSlice(int totalNumberOfClusters)
   }
 }
 
-void printClusterInformation(int padRow)
+void printClusterInformation()
 {
-  cout << "ID" << setw(16) << "X" << setw(14) << "Y" << setw(12) << "Z" << setw(9) << "Pad" << setw(10) << "Time"
+  cout << "ID" << setw(13) << "X" << setw(10) << "Y" << setw(10) << "Z" << setw(9) << "Pad" << setw(9) << "Time"
+       << setw(10) << "Charge" << setw(10) << "Sector" << setw(10) << "Eta" << endl;
+
+  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
+    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
+         clusterNumber++) {
+      cout << (AliHLTUInt32_t)clusterCollection->getClusterID(padRow, clusterNumber) << setw(9)
+           << clusterCollection->getClusterX(padRow, clusterNumber) << setw(10)
+           << clusterCollection->getClusterY(padRow, clusterNumber) << setw(10)
+           << clusterCollection->getClusterZ(padRow, clusterNumber) << setw(8)
+           << clusterCollection->getClusterPad(padRow, clusterNumber) << setw(7)
+           << clusterCollection->getClusterTime(padRow, clusterNumber) << setw(5)
+           << clusterCollection->getClusterCharge(padRow, clusterNumber) << setw(5)
+           << clusterCollection->getClusterTPCSlice(padRow, clusterNumber) << setw(5)
+           << clusterCollection->getClusterEtaSlice(padRow, clusterNumber) << endl;
+    }
+  }
+}
+
+void printClusterInformation(int TPCSlice, int etaSlice)
+{
+  cout << "ID" << setw(13) << "X" << setw(10) << "Y" << setw(10) << "Z" << setw(9) << "Pad" << setw(9) << "Time"
        << setw(10) << "Charge" << endl;
 
-  for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
-       clusterNumber++) {
-    cout << (AliHLTUInt32_t)clusterCollection->getClusterID(padRow, clusterNumber) << setw(13)
-         << clusterCollection->getClusterX(padRow, clusterNumber) << setw(13)
-         << clusterCollection->getClusterY(padRow, clusterNumber) << setw(13)
-         << clusterCollection->getClusterZ(padRow, clusterNumber) << setw(8)
-         << clusterCollection->getClusterPad(padRow, clusterNumber) << setw(8)
-         << clusterCollection->getClusterTime(padRow, clusterNumber) << setw(7)
-         << clusterCollection->getClusterCharge(padRow, clusterNumber) << endl;
+       cout << TPCSlice << " " << etaSlice << endl;
+
+       cout << boost::format("%1% %2% %3% %2% %1% \n") % "11" % "22" % "333"; // 'simple' style.
+
+       cout << boost::format("%1%, %2%, %|40t|%3%\n") % "abc" % "efg" % "hij";
+
+       cout << boost::format("%1%, %2%, %|40t|%3%\n") % "abc" % "efg" % "hij";
+
+       cout << boost::format("%1% %2% %|40t|%3%\n") % "abc" % "efg" % "hij";
+
+  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
+    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
+         clusterNumber++) {
+
+      if (clusterCollection->getClusterTPCSlice(padRow, clusterNumber) != TPCSlice ||
+          clusterCollection->getClusterEtaSlice(padRow, clusterNumber) != etaSlice) {
+        continue;
+      }
+
+      cout << (AliHLTUInt32_t)clusterCollection->getClusterID(padRow, clusterNumber) << setw(9)
+           << clusterCollection->getClusterX(padRow, clusterNumber) << setw(10)
+           << clusterCollection->getClusterY(padRow, clusterNumber) << setw(10)
+           << clusterCollection->getClusterZ(padRow, clusterNumber) << setw(8)
+           << clusterCollection->getClusterPad(padRow, clusterNumber) << setw(7)
+           << clusterCollection->getClusterTime(padRow, clusterNumber) << setw(5)
+           << clusterCollection->getClusterCharge(padRow, clusterNumber) << endl;
+    }
   }
+}
+
+inline bool parseCommandLine(int _argc, char* _argv[], DeviceOptions* _options)
+{
+  if (_options == NULL) {
+    throw runtime_error("Internal error: options' container is empty.");
+  }
+
+  namespace bpo = boost::program_options;
+  bpo::options_description desc("Options");
+  desc.add_options()("event", bpo::value<std::string>()->required(), "Specify an event to load from disk <mandatory>")(
+    "TPCSlice", bpo::value<int>()->default_value(1), "Specify a TPC slice to draw clusters from")(
+    "etaSlice", bpo::value<int>()->default_value(25), "Specify an eta slice to draw clusters from")(
+    "print", "Print information on clusters for the given TPC and eta slices and exit")(
+    "print-all", "Print information on all clusters and exit")("help", "Print this help message");
+
+  bpo::variables_map vm;
+  bpo::store(bpo::parse_command_line(_argc, _argv, desc), vm);
+
+  if (vm.count("help")) {
+    cout << desc << endl;
+    return false;
+  }
+
+  bpo::notify(vm);
+
+  if (vm.count("event")) {
+    _options->event = vm["event"].as<std::string>();
+  }
+  if (vm.count("TPCSlice")) {
+    _options->TPCSlice = vm["TPCSlice"].as<int>();
+  }
+  if (vm.count("etaSlice")) {
+    _options->etaSlice = vm["etaSlice"].as<int>();
+  }
+  if (vm.count("print")) {
+    _options->print = true;
+  } else {
+    _options->print = false;
+  }
+  if (vm.count("print-all")) {
+    _options->printAll = true;
+  } else {
+    _options->printAll = false;
+  }
+
+  return true;
 }
 
 int main(int argc, char** argv)
 {
 
-  boost::program_options::options_description desc("Allowed options");
-  desc.add_options()("help", "Display this help and exit")(
-    "event", boost::program_options::value<std::string>(),
-    "Specify an event to load inside the emulated-tpc-clusters directory <mandatory>")(
-    "print", boost::program_options::value<int>(), "Print cluster information for a specific pad row and exit");
-
-  boost::program_options::variables_map vm;
-  boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
-  boost::program_options::notify(vm);
-
-  if (vm.count("help")) {
-    cout << desc << endl;
-    return 1;
+  DeviceOptions_t options;
+  try {
+    if (!parseCommandLine(argc, argv, &options)) {
+      return 0;
+    }
   }
-
-  if (!vm.count("event")) {
-    cout << desc << endl;
-    cout << "Please provide an event number!" << endl;
+  catch (const exception& e) {
+    cerr << e.what() << endl;
     return 1;
   }
 
   // Create data path
   std::string dataFilename = "emulated-tpc-clusters/event";
-  dataFilename += vm["event"].as<std::string>();
+  dataFilename += options.event;
 
   boost::filesystem::path dataPath(dataFilename);
   boost::filesystem::directory_iterator endIterator;
@@ -218,22 +329,30 @@ int main(int argc, char** argv)
 
   cout << "Added " << totalNumberOfClusters << " clusters from " << totalNumberOfDataFiles << " data files." << endl;
 
-  if (vm.count("print")) {
-    printClusterInformation(vm["print"].as<int>());
-    return 1;
-  }
-
-  // for (int i = 0; i < Transform::GetNRows(); i++) {
-  //  cout << clusterCollection->getNumberOfClustersPerPadRow(i) << " Clusters for PadRow " << i << endl;
-  //}
-
   calculateEta(totalNumberOfClusters);
   // Determine the minimum and maximum values of eta. That way the TPC digits can be grouped into pseudorapidity bins
   determineMinMaxEta(totalNumberOfClusters);
   // Discretize the eta values of all clusters into etaResolution bins
   calculateEtaSlice(totalNumberOfClusters);
 
-//  draw1DCartesianClustersPerPadRow(25);
+  if (options.print || options.printAll) {
+    for (int i = 0; i < Transform::GetNRows(); i++) {
+      cout << clusterCollection->getNumberOfClustersPerPadRow(i) << " Clusters for PadRow " << i << endl;
+    }
+  }
+
+  if (options.print) {
+    printClusterInformation(options.TPCSlice, options.etaSlice);
+    return 1;
+  }
+
+  if (options.printAll) {
+    printClusterInformation();
+    return 1;
+  }
+
+  //  draw1DCartesianClustersPerPadRow(25);
+  // FIXME: Draw clusters per eta slice per TPC Sector
   draw1DCartesianClustersPerEtaSlice(25);
   drawCartesianClusters();
 

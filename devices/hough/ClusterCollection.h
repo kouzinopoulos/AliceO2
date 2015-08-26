@@ -23,6 +23,7 @@ struct clusterDataFormat {
   // The ALICE TPC detector consists out of 2 x 18 = 36 slices (or sectors?) (18 slices at the top, 18 slices at the bottom). Each
   // slice consists of 2 inner patches (or partitions) and 4 outer patches = 6 patches for a total of 216 patches.
   // Moreover, there are 15488 (5504+9984) pads and 159 (63+64+32) pad rows per sector for a total of 557568 (36x15488) pads.
+  // See https://cds.cern.ch/record/2030274 for a representation of sectors and pad rows.
   UInt_t mTPCSlice;
   UInt_t mTPCPartition;
 
@@ -54,7 +55,7 @@ public:
   UInt_t getClusterID(UInt_t padRow, int clusterNumber) { return clusterData[padRow][clusterNumber].mID; }
   UInt_t getClusterCharge(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mCharge; }
 
-  UInt_t getClusterSlice(UInt_t padRow, int clusterNumber) { return clusterData[padRow][clusterNumber].mTPCSlice; }
+  UInt_t getClusterTPCSlice(UInt_t padRow, int clusterNumber) { return clusterData[padRow][clusterNumber].mTPCSlice; }
   UInt_t getClusterPartition(UInt_t padRow, int clusterNumber) { return clusterData[padRow][clusterNumber].mTPCPartition; }
 
   Double_t getClusterPad(UInt_t padRow, UInt_t clusterNumber) { return clusterData[padRow][clusterNumber].mPad; }

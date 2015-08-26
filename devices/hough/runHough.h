@@ -8,6 +8,7 @@
 #include "TGraph2D.h"
 
 #include "boost/filesystem.hpp"
+#include "boost/format.hpp"
 #include "boost/program_options.hpp"
 
 #include "Accumulator.h"
