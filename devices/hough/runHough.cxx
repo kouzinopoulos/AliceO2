@@ -22,7 +22,7 @@ typedef struct DeviceOptions {
 
 /// Calculate an approximate value for η. See [1]:p8 for more information. Values below taken from
 /// AliHLTConfMapPoint.cxx
-void calculateEta(int totalNumberOfClusters)
+void calculateEta()
 {
   for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
     for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
@@ -42,7 +42,7 @@ void calculateEta(int totalNumberOfClusters)
 
 /// Determine the minimum and maximum values of the pseudorapidity (eta). That way, the TPC digits can be
 /// transformed in two dimensions instead of three in slices of similar pseudorapidity
-void determineMinMaxEta(int totalNumberOfClusters)
+void determineMinMaxEta()
 {
   for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
     for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
@@ -68,7 +68,7 @@ void determineMinMaxEta(int totalNumberOfClusters)
 }
 
 /// Discretize the eta values of all clusters into etaResolution bins
-void calculateEtaSlice(int totalNumberOfClusters)
+void calculateEtaSlice()
 {
   for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
     for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
@@ -131,6 +131,23 @@ void printClusterInformation(int TPCSlice, int etaSlice)
            << clusterCollection->getClusterCharge(padRow, clusterNumber) << endl;
     }
   }
+}
+
+void readData(boost::filesystem::path dataPath, ClusterCollection* clusterCollection, int TPCSlice)
+{
+  static int totalNumberOfClusters = 0;
+
+  std::string dataType = "CLUSTERS", dataOrigin = "TPC ";
+  boost::filesystem::directory_iterator endIterator;
+
+  for (boost::filesystem::directory_iterator directoryIterator(dataPath); directoryIterator != endIterator;
+       ++directoryIterator) {
+    if (boost::filesystem::is_regular_file(directoryIterator->status())) {
+      totalNumberOfClusters += clusterCollection->readData(directoryIterator->path().string(), dataType, dataOrigin, TPCSlice);
+    }
+  }
+
+  cout << "Added " << totalNumberOfClusters << " clusters to memory" << endl;
 }
 
 inline bool parseCommandLine(int _argc, char* _argv[], DeviceOptions* _options)
@@ -199,44 +216,14 @@ int main(int argc, char** argv)
   dataFilename += options.event;
 
   boost::filesystem::path dataPath(dataFilename);
-  boost::filesystem::directory_iterator endIterator;
-
-  typedef std::multimap<std::time_t, boost::filesystem::path> result_set_t;
-  result_set_t result_set;
-
-  std::string dataType = "CLUSTERS", dataOrigin = "TPC ";
-
-  int totalNumberOfClusters = 0, totalNumberOfDataFiles = 0;
 
   clusterCollection = new ClusterCollection();
 
-  // Traverse the filesystem and call readData for each cluster file found
-  if (boost::filesystem::exists(dataPath) && boost::filesystem::is_directory(dataPath)) {
-    for (boost::filesystem::directory_iterator directoryIterator(dataPath); directoryIterator != endIterator;
-         ++directoryIterator) {
-      if (boost::filesystem::is_regular_file(directoryIterator->status())) {
-        totalNumberOfClusters += clusterCollection->readData(directoryIterator->path().string(), dataType, dataOrigin);
-        totalNumberOfDataFiles++;
-      }
-    }
-  } else {
-    std::cerr << "Path " << dataPath.string() << "/ could not be found or does not contain any valid data files"
-              << endl;
+  // Check if the provided data path exists and is a directory
+  if (!boost::filesystem::exists(dataPath) || !boost::filesystem::is_directory(dataPath)) {
+    std::cerr << "Path " << dataPath.string() << "/ could not be found or does not contain valid data files" << endl;
     exit(1);
   }
-
-  cout << "Added " << totalNumberOfClusters << " clusters from " << totalNumberOfDataFiles << " data files." << endl;
-
-  calculateEta(totalNumberOfClusters);
-  // Determine the minimum and maximum values of eta. That way the TPC digits can be grouped into pseudorapidity bins
-  determineMinMaxEta(totalNumberOfClusters);
-  // Discretize the eta values of all clusters into etaResolution bins
-  calculateEtaSlice(totalNumberOfClusters);
-
-  Draw* draw = new Draw();
-  draw->CartesianClusters1D(clusterCollection, options.etaSlice);
-  draw->CartesianClusters1D(clusterCollection, options.TPCSlice, options.etaSlice);
-  draw->CartesianClusters2D(clusterCollection);
 
   if (options.print || options.printAll) {
     for (int i = 0; i < Transform::GetNRows(); i++) {
@@ -267,12 +254,24 @@ int main(int argc, char** argv)
   hough->Init("./", kFALSE, 100, kFALSE, 4, 0, 0, zvertex);
   hough->SetAddHistograms();
 
-  for (Int_t slice = 0; slice <= 35; slice++) {
+  for (Int_t TPCSlice = 0; TPCSlice <= 35; TPCSlice++) {
+    readData(dataPath, clusterCollection, TPCSlice);
     hough->Transform(0, clusterCollection);
     hough->AddAllHistogramsRows();
     hough->FindTrackCandidatesRow();
     //    hough->AddTracks();
   }
+
+  // Calculate eta values for all clusters, determine eta minimums and maximums and discretize them into eta slices
+  calculateEta();
+  determineMinMaxEta();
+  calculateEtaSlice();
+
+  //Draw pdf histograms on the current working directory
+  Draw* draw = new Draw();
+  draw->CartesianClusters1D(clusterCollection, options.etaSlice);
+  draw->CartesianClusters1D(clusterCollection, options.TPCSlice, options.etaSlice);
+  draw->CartesianClusters2D(clusterCollection);
 
   delete clusterCollection;
 

@@ -48,7 +48,7 @@ public:
   virtual ~ClusterCollection();
 
   /// Load cluster information to memory from disk
-  UInt_t readData(std::string dataPath, std::string dataType, std::string dataOrigin);
+  UInt_t readData(std::string dataPath, std::string dataType, std::string dataOrigin, int TPCSlice);
 
   UInt_t getNumberOfClustersPerPadRow(UInt_t padRow) { return clusterData[padRow].size(); }
 

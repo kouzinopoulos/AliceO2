@@ -13,8 +13,20 @@ ClusterCollection::ClusterCollection() : clusterData(Transform::GetNRows()) {}
 
 ClusterCollection::~ClusterCollection() {}
 
-UInt_t ClusterCollection::readData(std::string dataPath, std::string dataType, std::string dataOrigin)
+UInt_t ClusterCollection::readData(std::string dataPath, std::string dataType, std::string dataOrigin, int TPCSlice)
 {
+  // Retrieve the TPC slice and partition from the filename
+  std::string currentSliceString(dataPath, dataPath.length() - 6, 2);
+  std::string currentPartitionString(dataPath, dataPath.length() - 2, 2);
+
+  AliHLTUInt8_t currentSlice = std::stoul(currentSliceString, nullptr, 16);
+  AliHLTUInt8_t currentPartition = std::stoul(currentPartitionString, nullptr, 16);
+
+  //If the file does not correspond to the given TPC slice provided by the user, return
+  if (currentSlice != TPCSlice) {
+    return 0;
+  }
+
   // Open data file for reading
   std::ifstream inputData(dataPath.c_str(), std::ifstream::binary);
   if (!inputData) {
@@ -31,13 +43,6 @@ UInt_t ClusterCollection::readData(std::string dataPath, std::string dataType, s
   char* inputBuffer = new char[dataLength];
   inputData.read(inputBuffer, dataLength);
   inputData.close();
-
-  // Retrieve the TPC slice and partition from the filename
-  std::string currentSliceString(dataPath, dataPath.length() - 6, 2);
-  std::string currentPartitionString(dataPath, dataPath.length() - 2, 2);
-
-  AliHLTUInt8_t currentSlice = std::stoul(currentSliceString, nullptr, 16);
-  AliHLTUInt8_t currentPartition = std::stoul(currentPartitionString, nullptr, 16);
 
   // Initialize a cluster point collection
   spacepoints = std::unique_ptr<AliHLTTPCSpacePointContainer>(new AliHLTTPCSpacePointContainer);
