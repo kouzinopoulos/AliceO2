@@ -22,6 +22,7 @@ set(SRCS
   Accumulator.cxx
   BaseTransformer.cxx
   ClusterCollection.cxx
+  Draw.cxx
   Hough.cxx
   HoughTrack.cxx
   MaxFinder.cxx

@@ -20,99 +20,6 @@ typedef struct DeviceOptions {
   bool printAll;
 } DeviceOptions_t;
 
-void draw1DCartesianClustersPerTPCSliceAndEtaSlice(int TPCSlice, int etaSlice)
-{
-  TCanvas* cartesianClustersPerTPCSliceAndEtaSliceCanvas1D =
-    new TCanvas("cartesianClustersPerTPCSliceAndEtaSliceCanvas1D", "Cartesian clusters per TPC and eta slice");
-  TGraph* cartesianClustersPerTPCSliceAndEtaSliceGraph1D = new TGraph();
-
-  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
-    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
-         clusterNumber++) {
-      if (clusterCollection->getClusterTPCSlice(padRow, clusterNumber) == TPCSlice &&
-          clusterCollection->getClusterEtaSlice(padRow, clusterNumber) == etaSlice) {
-        cartesianClustersPerTPCSliceAndEtaSliceGraph1D->SetPoint(clusterNumber,
-                                                                 clusterCollection->getClusterX(padRow, clusterNumber),
-                                                                 clusterCollection->getClusterY(padRow, clusterNumber));
-      }
-    }
-  }
-
-  cartesianClustersPerTPCSliceAndEtaSliceGraph1D->SetMarkerStyle(7);
-  cartesianClustersPerTPCSliceAndEtaSliceGraph1D->Draw("AP");
-  cartesianClustersPerTPCSliceAndEtaSliceGraph1D->GetXaxis()->SetRangeUser(80, 240);
-  cartesianClustersPerTPCSliceAndEtaSliceGraph1D->GetXaxis()->SetTitle("Pad Row");
-
-  cartesianClustersPerTPCSliceAndEtaSliceCanvas1D->Print("cartesianClustersPerEtaSlicePerTPCSlice.pdf");
-}
-
-void draw1DCartesianClustersPerEtaSlice(int etaSlice)
-{
-  TCanvas* cartesianClustersPerEtaSliceCanvas1D =
-    new TCanvas("cartesianClustersPerEtaSliceCanvas1D", "Cartesian clusters per eta slice");
-  TGraph* cartesianClustersPerEtaSliceGraph1D = new TGraph();
-
-  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
-    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
-         clusterNumber++) {
-      if (clusterCollection->getClusterEtaSlice(padRow, clusterNumber) == etaSlice) {
-        cartesianClustersPerEtaSliceGraph1D->SetPoint(clusterNumber,
-                                                      clusterCollection->getClusterX(padRow, clusterNumber),
-                                                      clusterCollection->getClusterY(padRow, clusterNumber));
-      }
-    }
-  }
-
-  cartesianClustersPerEtaSliceGraph1D->SetMarkerStyle(7);
-  cartesianClustersPerEtaSliceGraph1D->Draw("AP");
-  cartesianClustersPerEtaSliceGraph1D->GetXaxis()->SetRangeUser(80, 240);
-  cartesianClustersPerEtaSliceGraph1D->GetXaxis()->SetTitle("Pad Row");
-
-  cartesianClustersPerEtaSliceCanvas1D->Print("cartesianClustersPerEtaSlice.pdf");
-}
-
-void draw1DCartesianClustersPerPadRow(int padRow)
-{
-  TCanvas* cartesianClustersPerPadRowCanvas1D =
-    new TCanvas("cartesianClustersPerPadRow1D", "Cartesian clusters per pad row");
-  TGraph* cartesianClustersPerPadRowGraph1D = new TGraph();
-
-  for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
-       clusterNumber++) {
-    cartesianClustersPerPadRowGraph1D->SetPoint(clusterNumber, clusterCollection->getClusterX(padRow, clusterNumber),
-                                                clusterCollection->getClusterY(padRow, clusterNumber));
-  }
-
-  cartesianClustersPerPadRowGraph1D->SetMarkerStyle(7);
-  cartesianClustersPerPadRowGraph1D->Draw("AP");
-  cartesianClustersPerPadRowGraph1D->GetXaxis()->SetRangeUser(80, 240);
-  cartesianClustersPerPadRowGraph1D->GetXaxis()->SetTitle("Pad Row");
-
-  cartesianClustersPerPadRowCanvas1D->Print("cartesianClustersPerPadRow.pdf");
-}
-
-void drawCartesianClusters()
-{
-  TCanvas* cartesianClustersCanvas = new TCanvas("cartesianClustersCanvas", "Cartesian clusters", 800, 600);
-  TGraph2D* cartesianClustersGraph2D = new TGraph2D();
-
-  for (UInt_t padRow = 0; padRow < Transform::GetNRows(); padRow++) {
-    for (UInt_t clusterNumber = 0; clusterNumber < clusterCollection->getNumberOfClustersPerPadRow(padRow);
-         clusterNumber++) {
-      cartesianClustersGraph2D->SetPoint(padRow, clusterCollection->getClusterX(padRow, clusterNumber),
-                                         clusterCollection->getClusterY(padRow, clusterNumber),
-                                         clusterCollection->getClusterZ(padRow, clusterNumber));
-    }
-  }
-
-  // Draw with colored dots
-  cartesianClustersGraph2D->SetMarkerStyle(6);
-  cartesianClustersGraph2D->SetTitle("TPC Clusters in x, y, z");
-  cartesianClustersGraph2D->Draw("pcol");
-
-  cartesianClustersCanvas->Print("cartesianClusters2D.pdf");
-}
-
 /// Calculate an approximate value for η. See [1]:p8 for more information. Values below taken from
 /// AliHLTConfMapPoint.cxx
 void calculateEta(int totalNumberOfClusters)
@@ -326,10 +233,10 @@ int main(int argc, char** argv)
   // Discretize the eta values of all clusters into etaResolution bins
   calculateEtaSlice(totalNumberOfClusters);
 
-  //  draw1DCartesianClustersPerPadRow(25);
-  draw1DCartesianClustersPerEtaSlice(options.etaSlice);
-  draw1DCartesianClustersPerTPCSliceAndEtaSlice(options.TPCSlice, options.etaSlice);
-  drawCartesianClusters();
+  Draw* draw = new Draw();
+  draw->CartesianClusters1D(clusterCollection, options.etaSlice);
+  draw->CartesianClusters1D(clusterCollection, options.TPCSlice, options.etaSlice);
+  draw->CartesianClusters2D(clusterCollection);
 
   if (options.print || options.printAll) {
     for (int i = 0; i < Transform::GetNRows(); i++) {

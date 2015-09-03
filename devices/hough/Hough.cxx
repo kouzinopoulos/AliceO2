@@ -513,13 +513,9 @@ void Hough::AddAllHistogramsRows()
 
 void Hough::PrepareForNextPatch(Int_t nextpatch)
 {
-  // Prepare the parameter space for the processing of
-  // the next read patch. According to the already
-  // accumulated number of gaps in parameter space
-  // bins, the routine updates the dynamic
-  // pointers used in order to jump rapidly during the
+  // Prepare the parameter space for the processing of the next read patch. According to the already accumulated number
+  // of gaps in parameter space bins, the routine updates the dynamic pointers used in order to jump rapidly during the
   // filling of the parameter space.
-
   UChar_t lastpatchlastrow;
   if (fLastPatch == -1) {
     lastpatchlastrow = 0;

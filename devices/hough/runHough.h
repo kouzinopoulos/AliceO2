@@ -2,17 +2,13 @@
 /// \brief Definition of a cluster loader
 /// \author Charis Kouzinopoulos
 
-#include "TCanvas.h"
-#include "TH2F.h"
-#include "TGraph.h"
-#include "TGraph2D.h"
-
 #include "boost/filesystem.hpp"
 #include "boost/program_options.hpp"
 
 #include "Accumulator.h"
 #include "BaseTransformer.h"
 #include "ClusterCollection.h"
+#include "Draw.h"
 #include "Hough.h"
 #include "TransformerRow.h"
 #include "Transform.h"

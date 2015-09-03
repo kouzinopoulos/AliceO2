@@ -1,13 +1,13 @@
 Hough Transform
 ===============
 
-This is the groundwork for the Hough Transform algorithm implementation. The runHough executable takes as an argument an event number (i.e. runHough 032) and for the given event it loads all clusters from the corresponding data files.
+The Hough device contains the initial implementation of the Hough Transform algorithm.
 
 ### Step by Step installation and execution
 
 1. The runHough executable depends on the AliRoot HLT libraries. For this, an optional dependency to AliRoot has been added to the AliceO2 framework. To build the executable, the path to the AliRoot installation must be given at configuration time. For example:
 
-    cmake -DCMAKE_INSTALL_PREFIX:PATH=.. -DCMAKE_CXX_FLAGS="-std=c++11" .. -DALIROOT="/opt/alice/external/AliRoot"
+    cmake -DCMAKE_INSTALL_PREFIX:PATH=.. -DCMAKE_CXX_FLAGS="-std=c++11" .. -DALIROOT="/opt/alice/external/AliRoot" -DBUILD_DOXYGEN=ON
 
 It is important that AliRoot, FairRoot and AliceO2 have been built against the same version of ROOT. To ensure that the prerequisite packages were compiled and installed correctly, the alfaconfig.sh script that is included as part of the FairSoft installation can be used.
 
@@ -38,6 +38,6 @@ Finally, the following commands should executed:
 
 The result should be a directory, called "emulated-tpc-clusters" that will be the input of runHough. By executing
 
-    runHough 032
+    runHough --event 008 --TPCSlice 25 --etaSlice 29
 
-the executable will load all the clusters from the emulated-tpc-clusters/event032 subdirectory. After the execution, a graphics file "clusters.pdf" will be created in the current directory depicting the coordinates of the loaded clusters.
+the executable will load all the clusters from the emulated-tpc-clusters/event008 subdirectory and will draw the clusters from sector 25 of the TPC and for a pseudorapidity slice of 29 on different .pdf files at the current directory.
