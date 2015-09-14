@@ -269,7 +269,8 @@ int main(int argc, char** argv)
 
   //Draw pdf histograms on the current working directory
   Draw* draw = new Draw();
-  draw->CartesianClusters1D(clusterCollection, options.etaSlice);
+  draw->CartesianClusters1DEtaSlice(clusterCollection, options.etaSlice);
+  draw->CartesianClusters1DTPCSlice(clusterCollection, options.TPCSlice);
   draw->CartesianClusters1D(clusterCollection, options.TPCSlice, options.etaSlice);
   draw->CartesianClusters2D(clusterCollection);
 
